@@ -12,3 +12,4 @@ Semaine 2. 29 Janvier au 05 Février :
 - Récolte d'informations sur les variables de la base de données.
 - Élaboration de pistes à explorer.
 - Transformation du jeu de données pour les statistiques descriptives.
+test
