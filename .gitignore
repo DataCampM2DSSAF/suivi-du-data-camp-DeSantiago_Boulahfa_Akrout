@@ -1,4 +1,5 @@
 .DS_Store
 .Rproj.user
 code/data_filtered.csv
+code/Stats descriptives/data_filtered.csv
 .Rhistory
