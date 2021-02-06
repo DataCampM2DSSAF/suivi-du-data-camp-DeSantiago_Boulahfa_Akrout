@@ -1,0 +1,332 @@
+---
+title: "Data Camp Open Vaccine: Data preprocessing and visualisation"
+author: "AKROUT Leyth, BOULAHFA Jawad, DE SANTIAGO Kylliann"
+date: "February 6th, 2021"
+output:
+  prettydoc::html_pretty:
+    toc: true
+    theme: cayman
+    highlight: github
+    df_print : paged
+---
+
+```{r, echo=FALSE}
+rm(list = ls())
+```
+
+```{r, results='hide', message=FALSE, warning=FALSE, echo=FALSE}
+## Packages
+
+library(tidyverse)
+library(reshape2)
+library(data.table)
+
+library(gtools)
+
+library(forcats)
+
+library(stringr)
+library(stringi)
+library(readr)
+
+library(caret)
+```
+
+# Data preprocessing
+
+```{r, warning=FALSE, message=FALSE}
+# We start by loading the data
+data_filtered <- read_csv("data_filtered.csv")
+# We add column names to the first two columns
+colnames(data_filtered)[1] <- "Position"
+colnames(data_filtered)[2] <- "Covariable"
+# We create a list which contains the names of the nucleotides:
+# 0 = A, 1 = U, 2 = C, 3 = G
+nucleotide_labels <- c("A", "U", "C", "G")
+# We create a list which contains the names of the predicted loop types:
+# 0 = S, 1 = M, 2 = I, 3 = B, 4 = H, 5 = E, 6 = X
+predicted_loop_type_labels <- c("S", "M", "I", "B", "H", "E", "X")
+# Removing the accent
+data_filtered$Covariable[data_filtered$Covariable == "nucléotide"] <- "nucleotide"
+# Recoding the facto
+data_filtered$Covariable <-
+  recode_factor(data_filtered$Covariable, "score_structure_boucle" = "reactivity")
+```
+
+```{r}
+# As "Position" is the column name, we can just extract the number inside the strings to keep the position information.
+data_filtered <- data_filtered %>%
+  mutate(Position = as.factor(parse_number(as.character(Position))))
+```
+
+```{r}
+# First 25 lines of the data frame
+head(data_filtered, n = 25)
+```
+
+```{r}
+# We gather the nucleotides values for all positions in a dataframe.
+nucleotide_df <- data_filtered %>% subset(Covariable == "nucleotide") %>%
+  dplyr::select(-c(Position, Covariable)) %>% mutate_all(as.factor)
+# The row index changed, so we change it back.
+# The row index is now the position in the sequence.
+rownames(nucleotide_df) <- NULL
+
+# X is a vector which will contain all nucleotides values (for each position and each individual)
+X <- c()
+for (i in seq(1:nrow(nucleotide_df))){
+  X <- c(X, nucleotide_df[i, ])
+}
+X <- unlist(X)
+
+# We gather the reactivity values for all positions in a dataframe.
+reactivity_df <- data_filtered %>%
+  subset(Covariable == "reactivity") %>%
+  dplyr::select(-c(Position, Covariable))
+rownames(reactivity_df) <- NULL
+
+# We gather the score_mg_ph10 values for all positions in a dataframe.
+score_mg_ph10_df <- data_filtered %>%
+  subset(Covariable == "score_mg_ph10") %>%
+  dplyr::select(-c(Position, Covariable))
+# The row index changed, so we change it back.
+# The row index is now the position in the sequence.
+rownames(score_mg_ph10_df) <- NULL
+
+# We gather the score_ph10 values for all positions in a dataframe.
+score_ph10_df <- data_filtered %>%
+  subset(Covariable == "score_ph10") %>%
+  dplyr::select(-c(Position, Covariable))
+# The row index changed, so we change it back.
+# The row index is now the position in the sequence.
+rownames(score_ph10_df) <- NULL
+
+# We gather the score_mg_50c values for all positions in a dataframe.
+score_mg_50c_df <- (data_filtered[data_filtered[,2]=='score_mg_50c',]) %>% dplyr::select(-c(Position, Covariable))
+# The row index changed, so we change it back.
+# The row index is now the position in the sequence.
+rownames(score_mg_50c_df) <- NULL
+
+# We gather the score_50c values for all positions in a dataframe.
+score_50c_df <- data_filtered %>%
+  subset(Covariable == "score_50c") %>%
+  dplyr::select(-c(Position, Covariable))
+# The row index changed, so we change it back.
+# The row index is now the position in the sequence.
+rownames(score_50c_df) <- NULL
+
+# Y_reactivity, ... ,Y_score_50c are vector which will contain all score values (for each position and each individual)
+Y_reactivity <- c()
+Y_score_mg_ph10 <- c()
+Y_score_ph10 <- c()
+Y_score_mg_50c <- c()
+Y_score_50c <- c()
+for (i in seq(1:nrow(nucleotide_df)))
+{
+  Y_reactivity <- c(Y_reactivity, reactivity_df[i, ])
+  Y_score_mg_ph10 <- c(Y_score_mg_ph10, score_mg_ph10_df[i, ])
+  Y_score_ph10 <- c(Y_score_ph10, score_ph10_df[i, ])
+  Y_score_mg_50c <- c(Y_score_mg_50c, score_mg_50c_df[i, ])
+  Y_score_50c <- c(Y_score_50c, score_50c_df[i, ])
+} 
+Y_reactivity <- unlist(Y_reactivity)
+Y_score_mg_ph10 <- unlist(Y_score_mg_ph10)
+Y_score_ph10 <- unlist(Y_score_ph10)
+Y_score_mg_50c <- unlist(Y_score_mg_50c)
+Y_score_50c <- unlist(Y_score_50c)
+
+scores_df <- data.frame(X, Y_reactivity, Y_score_mg_ph10, Y_score_ph10, Y_score_mg_50c, Y_score_50c)
+```
+
+
+# Data visualisation
+
+
+## Nucleotides
+
+```{r}
+nucleotide_table <- data.frame(table(X)) %>% mutate(Proportion = Freq/sum(Freq)) %>%
+  mutate(Percent = 100*Proportion) %>% mutate(Nucleotide = nucleotide_labels) %>%
+  dplyr::select(X, Nucleotide, everything())
+colnames(nucleotide_table)[3] <- "Count" 
+```
+
+```{r}
+nucleotide_table
+```
+
+There are 108 052 nucleotides in the dataset.
+```{r}
+nucleotide_table$Count %>% sum()
+```
+
+```{r}
+nucleotide_table %>%
+  mutate(ypos = cumsum(Proportion) - 0.5 * Proportion) %>%
+  ggplot(aes(x="", y=Proportion, fill=Nucleotide)) +
+  geom_bar(stat="identity", width=1, color="black") +
+  coord_polar(theta = "y", direction = 1) + theme_void() +
+  geom_text(aes(label = paste0(round(100*Proportion, 2), "%")),
+            position = position_stack(vjust = 0.5),
+            color = "white", size = 5) +
+  ggtitle("Nucleotides pie plot")
+```
+
+```{r}
+scores_df %>% ggplot(aes(x = X, y = Y_reactivity)) + geom_boxplot(aes(color = X)) + coord_flip() +
+  labs(x = "nucléotides", y = "reactivity", color = "nucléotides") +
+  scale_x_discrete(labels = nucleotide_labels) +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+
+```{r}
+scores_df %>% ggplot(aes(x = X, y = Y_score_mg_ph10)) +
+  geom_boxplot(aes(color = X)) + coord_flip() +
+  labs(x = "nucléotides", y = "score_mg_ph10", color = "nucléotides") +
+  scale_x_discrete(labels = nucleotide_labels) +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+
+```{r}
+scores_df %>% ggplot(aes(x = X, y = Y_score_ph10)) +
+  geom_boxplot(aes(color = X)) + coord_flip() +
+  labs(x = "nucléotides", y = "score_ph10", color = "nucléotides") +
+  scale_x_discrete(labels = nucleotide_labels) +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+
+```{r}
+scores_df %>% ggplot(aes(x = X, y = Y_score_mg_50c)) +
+  geom_boxplot(aes(color = X)) + coord_flip() +
+  labs(x = "nucléotides", y = "score_mg_50c", color = "nucléotides") +
+  scale_x_discrete(labels = nucleotide_labels) +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+
+```{r}
+scores_df %>% ggplot(aes(x = X, y = Y_score_50c)) +
+  geom_boxplot(aes(color = X)) + coord_flip() +
+  labs(x = "nucléotides", y ="score_50c", color = "nucléotides") +
+  scale_x_discrete(labels = nucleotide_labels) +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+## Density functions
+
+### Reactivity
+
+```{r}
+# Density function without grouping.
+scores_df %>% ggplot(aes(Y_reactivity)) + geom_density()
+```
+
+```{r}
+# Density functions according to the nucleotides.
+scores_df %>% ggplot(aes(Y_reactivity, fill=X)) + 
+  geom_density(alpha=.5) + 
+  scale_fill_manual(values = c('#999999','#E69F00','#FC4D27','#2773FC')) + 
+  theme(legend.position ="right")+labs(title="reactivity", fill="nucleotide")
+```
+
+```{r}
+# We use facet_wrap to have a better look on each function.
+scores_df %>% ggplot(aes(Y_reactivity, group = X, fill = X)) + 
+  geom_density() + facet_wrap(~X) + 
+  theme(legend.position ="right")+labs(title="reactivity", fill="nucleotide")
+```
+
+### score_mg_ph10
+
+```{r}
+# Density function without grouping.
+scores_df %>% ggplot(aes(Y_score_mg_ph10)) + geom_density()
+```
+
+```{r}
+scores_df %>% ggplot(aes(Y_score_mg_ph10, fill = X)) + 
+  geom_density(alpha=.5) + 
+  scale_fill_manual(values = c('#999999','#E69F00','#FC4D27','#2773FC')) + 
+  theme(legend.position ="right")+labs(title="score_mg_ph10", fill="nucleotide")
+```
+
+```{r}
+scores_df %>% ggplot(aes(Y_score_mg_ph10, group = X, fill = X)) + 
+  geom_density() + facet_wrap(~X) + 
+  theme(legend.position ="right")+labs(title="score_mg_ph10", fill="nucleotide")
+```
+
+
+
+
+
+
+### score_ph10
+
+```{r}
+# Density function without grouping.
+scores_df %>% ggplot(aes(Y_score_ph10)) + geom_density()
+```
+
+```{r}
+scores_df %>% ggplot(aes(Y_score_ph10, fill = X)) + 
+  geom_density(alpha=.5) + 
+  scale_fill_manual(values = c('#999999','#E69F00','#FC4D27','#2773FC')) + 
+  theme(legend.position ="right")+labs(title="score_ph10", fill="nucleotide")
+```
+
+```{r}
+scores_df %>% ggplot(aes(Y_score_ph10, group = X, fill = X)) + 
+  geom_density() + facet_wrap(~X) + 
+  theme(legend.position ="right")+labs(title="score_ph10", fill="nucleotide")
+```
+
+
+
+
+### score_mg_50c
+
+```{r}
+scores_df %>% ggplot(aes(Y_score_mg_50c)) + geom_density()
+```
+
+```{r}
+scores_df %>% ggplot(aes(Y_score_mg_50c, fill=as.factor(X))) + 
+  geom_density(alpha=.5) + 
+  scale_fill_manual(values = c('#999999','#E69F00','#FC4D27','#2773FC')) + 
+  theme(legend.position ="right")+labs(title="score_mg_50c", fill="nucleotide")
+```
+
+```{r}
+scores_df %>% ggplot(aes(Y_score_mg_50c, group = X, fill = X)) + 
+  geom_density() + facet_wrap(~X) +
+  theme(legend.position ="right")+labs(title="score_mg_50c", fill="nucleotide")
+```
+
+
+
+
+
+### score_50c
+
+```{r}
+scores_df %>% ggplot(aes(Y_score_50c)) + geom_density()
+```
+
+```{r}
+scores_df %>% ggplot(aes(Y_score_50c, fill = X)) + 
+  geom_density(alpha=.5) + 
+  scale_fill_manual(values = c('#999999','#E69F00','#FC4D27','#2773FC')) + 
+  theme(legend.position ="right")+labs(title="score_50c", fill="nucleotide")
+```
+
+```{r}
+scores_df %>% ggplot(aes(Y_score_50c, group = X, fill = X)) + 
+  geom_density() + facet_wrap(~X) + 
+  theme(legend.position ="right")+labs(title="score_50c", fill="nucleotide")
+```
+
+
