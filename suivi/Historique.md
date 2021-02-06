@@ -15,4 +15,5 @@ Semaine 2. 29 Janvier au 05 Février :
 test.
 
 **Samedi 06 Février** :
+
 Kylliann -> Travail sur les statistiques descriptives sur les labels, mise à jour du gitHub, recherche de documentation sur le Multi-Target Regressor.
