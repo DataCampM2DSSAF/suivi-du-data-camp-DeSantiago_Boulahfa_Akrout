@@ -1,5 +1,6 @@
 ---
 title: "R Notebook"
+output: md_document
 ---
 
 ## Chargement des librairies
@@ -24,8 +25,7 @@ data_filtered$Covariable = recode_factor(data_filtered$Covariable,"score_structu
 Suite à un changement de nom de la variable reactivity on la renomme à nouveau pour rester cohérent avec les données initiales.
 
 ```{r}
-head(data_filtered)
-tail(data_filtered,n = 12)
+data_filtered[1:12,1:8]
 ```
 
 Chaque colonne (sauf les deux premières) indique les information pour l'individu concerné. Par exemple : ARN 1 nous donne l'information de l'individu du train 1.
@@ -37,7 +37,7 @@ Pour chaque nucléotide de la séquence, nous avons 12 informations :
 - Les labels (5).
 
 ```{r}
-sum(is.na(data_filtered[]))
+sum(is.na(data_filtered))
 ```
 Ici nous constatons que nous n'avons aucune valeur manquante, donc nous pouvons travailler avec le jeu de données sans avoir à gerer des `NaNs`
 
