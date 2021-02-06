@@ -62,8 +62,10 @@ model=glm(Y_reactivity+1e-12~as.factor(nucleotide)+as.factor(loop),family = Gamm
 summary(model)
 ```
 
+penser aux relations d'ordre 2 entre les variables !
 
-
-
-
+```{r}
+model=glm(Y_reactivity+1e-12~(as.factor(nucleotide)+as.factor(loop))^2,family = Gamma)
+summary(model)
+```
 
