@@ -7,7 +7,7 @@ output: md_document
 ```{r}
 library(ggplot2)
 library(tidyverse)
-source(file = "projet_fct.R")
+source("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/projet_fct.R")
 ```
 
 ## Chargement et prétraitement de la base de données
@@ -32,19 +32,25 @@ Chaque colonne (sauf les deux premières) indique les information pour l'individ
 De plus, la séquence d'ARN que nous disposons par individu est de longueur 68 (longueur dont nous possédont les labels).
 
 Pour chaque nucléotide de la séquence, nous avons 12 informations :
+
 - Le type de nucléotide, codé avec des entiers tel que : 0="A", 1 = "U", 2 = "C", 3="G".
+
 - Le structure de la boucle.
+
 - Les erreurs de mesures (5).
+
 - Les labels (5).
 
 ```{r}
 sum(is.na(data_filtered))
 ```
+
 Ici nous constatons que nous n'avons aucune valeur manquante, donc nous pouvons travailler avec le jeu de données sans avoir à gerer des `NaNs`
 
 ```{r}
 which(data_filtered[,3+2]<0)
 ```
+
 On peut apercevoir que pour l'individu n°3 nous avons des valeurs négatives. Ces valeurs sont en fait celles des labels prédit qui sont donc négatives.
 Or, les labels quantifient la dégradation des nucléotides donc avoir une valeur négatives implique une résistance à la dégradation, d'où la mise à 0 de ces valeurs. Permettant ainsi d'avoir les lois des labels sur $\mathbb{R}^+$.
 
