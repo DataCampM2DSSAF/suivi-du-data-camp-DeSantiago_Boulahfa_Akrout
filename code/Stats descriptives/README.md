@@ -26,7 +26,7 @@ pour l’instant, nous focaliser sur des données qui ne sont pas trop
 perturbées par le bruit, afin de pouvoir comprendre au mieux la base de
 données.
 
-    data_filtered = read.csv("data_filtered.csv")
+    data_filtered = read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_filtered.csv")
     colnames(data_filtered)[1] <- "Position"
     colnames(data_filtered)[2] <- "Covariable"
 
@@ -237,7 +237,9 @@ associés.
 
 ![](README_files/figure-markdown_strict/unnamed-chunk-19-1.png)
 
-### Visualisation lien les Labels
+### Visualisation du lien entre structure\_boucle et les Labels
+
+### Visualisation du lien entre les Labels
 
 <!-- ## Pour chaque position -->
 <!-- ```{r} -->
