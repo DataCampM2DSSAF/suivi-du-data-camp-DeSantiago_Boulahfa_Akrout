@@ -17,3 +17,5 @@ test.
 **Samedi 06 Février** :
 
 Kylliann -> Travail sur les statistiques descriptives sur les variables, création de la partie visualisation du GitHub, recherche de documentation sur le Multi-Target Regressor, structuration du code, tests d'exploitation de la piste de réflexion sur les prédictions successives, premiers essais de modèles naifs.
+
+Jawad -> Travail sur la réorganisation et la visualisation des données (pie plots, density plots, ...), recherche d'informations sur le jeu de données (forum Kaggle, article: https://daslab.stanford.edu/site_data/pub_pdf/2014_Seetin_MIMB.pdf).
