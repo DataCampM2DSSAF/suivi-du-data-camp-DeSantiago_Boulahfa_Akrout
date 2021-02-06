@@ -30,6 +30,7 @@ data_filtered[1:12,1:8]
 
 Chaque colonne (sauf les deux premières) indique les information pour l'individu concerné. Par exemple : ARN 1 nous donne l'information de l'individu du train 1.
 De plus, la séquence d'ARN que nous disposons par individu est de longueur 68 (longueur dont nous possédont les labels).
+
 Pour chaque nucléotide de la séquence, nous avons 12 informations :
 - Le type de nucléotide, codé avec des entiers tel que : 0="A", 1 = "U", 2 = "C", 3="G".
 - Le structure de la boucle.
@@ -53,5 +54,35 @@ for (i in noms){
   data_filtered[which(data_filtered[,i]<0),i]=0
 }
 ```
+
+## Visualisations :
+
+### Extraction de toutes les nucléotides à toutes les positions.
+
+
+La séquence ARN étant un enchainement de nucléotides, on suppose fortement que la position de ceux-ci dans la séquence ont une influence sur les labels.
+Or, afin d'avoir une première approche de cette base de données, nous allons explorer l'information contenue dedans sans prendre en compte la position des nucléotides, pour le moment.
+
+```{r}
+X=extraction_vect(data_filtered,'nucléotide')
+Y_reactivity = extraction_vect(data_filtered,'reactivity')
+Y_score_mg_ph10 = extraction_vect(data_filtered,'score_mg_ph10')
+Y_score_ph10 = extraction_vect(data_filtered,'score_ph10')
+Y_score_mg_50c = extraction_vect(data_filtered,'score_mg_50c')
+Y_score_50c = extraction_vect(data_filtered,'score_50c')
+```
+
+La variable X contient la liste de tous les nucléotides à toutes les positions et pour tout le monde. Les autres variables représentent chacun un label.
+
+```{r}
+plot(table(X))
+print(table(X))
+print(table(X)/sum(table(X)))
+```
+
+
+On constate que nous avons $108052$ nucléotides en tout. Toutefois, on peut voir une plus grande représentation de nucléotides `A` et `G`, comparé aux nucléotides `C` et `U`.
+Cette information pourra potentiellement avoir son influence, même si nous avons une quantité assez importante de chaque nucléotide ainsi que les valeurs de labels associés.
+
 
 
