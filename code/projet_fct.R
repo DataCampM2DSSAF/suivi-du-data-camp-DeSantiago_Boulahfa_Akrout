@@ -19,3 +19,6 @@ extraction_vect=function(clef){
   names(res)=NULL
   return(res)
 }
+# Permet de récupérer toutes les valeurs 
+# pour tout le monde et toutes les nucléotides de ce que l'on souhaite.
+# Ex: La liste de tous les nucléotides.
