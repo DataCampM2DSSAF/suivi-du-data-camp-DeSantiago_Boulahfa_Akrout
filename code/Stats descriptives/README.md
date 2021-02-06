@@ -15,7 +15,7 @@ Chargement des librairies
     ## x dplyr::filter() masks stats::filter()
     ## x dplyr::lag()    masks stats::lag()
 
-    source(file = "projet_fct.R")
+    source("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/projet_fct.R")
 
 Chargement et prétraitement de la base de données
 -------------------------------------------------
@@ -56,10 +56,18 @@ l’individu concerné. Par exemple : ARN 1 nous donne l’information de
 l’individu du train 1. De plus, la séquence d’ARN que nous disposons par
 individu est de longueur 68 (longueur dont nous possédont les labels).
 
-Pour chaque nucléotide de la séquence, nous avons 12 informations : - Le
-type de nucléotide, codé avec des entiers tel que : 0=“A”, 1 = “U”, 2 =
-“C”, 3=“G”. - Le structure de la boucle. - Les erreurs de mesures (5). -
-Les labels (5).
+Pour chaque nucléotide de la séquence, nous avons 12 informations :
+
+-   Le type de nucléotide, codé avec des entiers tel que : 0=“A”, 1 =
+    “U”, 2 = “C”, 3=“G”.
+
+-   Le structure de la boucle.
+
+-   Les erreurs de mesures (5).
+
+-   Les labels (5).
+
+<!-- -->
 
     sum(is.na(data_filtered))
 
@@ -128,3 +136,120 @@ comparé aux nucléotides `C` et `U`. Cette information pourra
 potentiellement avoir son influence, même si nous avons une quantité
 assez importante de chaque nucléotide ainsi que les valeurs de labels
 associés.
+
+### Visualisation lien nucléotides - Labels
+
+    min=0
+    max=11
+    ggplot(,aes(x=as.factor(X), y=Y_reactivity)) + geom_boxplot() + coord_flip() + labs(x= "nucléotides",y="reactivity") + ylim(min, max)
+
+![](README_files/figure-markdown_strict/unnamed-chunk-9-1.png)
+
+    ggplot(,aes(x=as.factor(X), y=Y_score_mg_ph10)) + geom_boxplot() + coord_flip() + labs(x= "nucléotides",y="score_mg_ph10") + ylim(min, max)
+
+![](README_files/figure-markdown_strict/unnamed-chunk-9-2.png)
+
+    ggplot(,aes(x=as.factor(X), y=Y_score_ph10)) + geom_boxplot() + coord_flip() + labs(x= "nucléotides",y="score_ph10") + ylim(min, max)
+
+![](README_files/figure-markdown_strict/unnamed-chunk-9-3.png)
+
+    ggplot(,aes(x=as.factor(X), y=Y_score_mg_50c)) + geom_boxplot() + coord_flip() + labs(x= "nucléotides",y="score_mg_50c") + ylim(min, max)
+
+![](README_files/figure-markdown_strict/unnamed-chunk-9-4.png)
+
+    ggplot(,aes(x=as.factor(X), y=Y_score_50c)) + geom_boxplot() + coord_flip() + labs(x= "nucléotides",y="score_50c") + ylim(min, max)
+
+![](README_files/figure-markdown_strict/unnamed-chunk-9-5.png)
+
+#### reactivity
+
+    Y_reactivity_density <- ggplot(, aes(Y_reactivity, fill=as.factor(X))) + 
+      geom_density(alpha=.5) + 
+      scale_fill_manual(values = c('#999999','#E69F00','#FC4D27','#2773FC')) + 
+      theme(legend.position ="right")+labs(title="reactivity", fill="nucléotide")
+    Y_reactivity_density
+
+![](README_files/figure-markdown_strict/unnamed-chunk-10-1.png)
+
+    xdensity <- ggplot(, aes(Y_reactivity)) + 
+      geom_density(alpha=.5)
+    xdensity
+
+![](README_files/figure-markdown_strict/unnamed-chunk-11-1.png)
+
+#### score\_mg\_ph10
+
+    Y_score_mg_ph10_density <- ggplot(, aes(Y_score_mg_ph10, fill=as.factor(X))) + 
+      geom_density(alpha=.5) + 
+      scale_fill_manual(values = c('#999999','#E69F00','#FC4D27','#2773FC')) + 
+      theme(legend.position ="right")+labs(title="score_mg_ph10", fill="nucléotide")
+    Y_score_mg_ph10_density
+
+![](README_files/figure-markdown_strict/unnamed-chunk-12-1.png)
+
+    ggplot(, aes(Y_score_mg_ph10)) + 
+      geom_density(alpha=.5)
+
+![](README_files/figure-markdown_strict/unnamed-chunk-13-1.png)
+
+#### score\_ph10
+
+    Y_score_ph10_density <- ggplot(, aes(Y_score_ph10, fill=as.factor(X))) + 
+      geom_density(alpha=.5) + 
+      scale_fill_manual(values = c('#999999','#E69F00','#FC4D27','#2773FC')) + 
+      theme(legend.position ="right")+labs(title="score_ph10", fill="nucléotide")
+    Y_score_ph10_density
+
+![](README_files/figure-markdown_strict/unnamed-chunk-14-1.png)
+
+    ggplot(, aes(Y_score_ph10)) + 
+      geom_density(alpha=.5)
+
+![](README_files/figure-markdown_strict/unnamed-chunk-15-1.png)
+
+#### score\_mg\_50c
+
+    Y_score_mg_50c_density <- ggplot(, aes(Y_score_mg_50c, fill=as.factor(X))) + 
+      geom_density(alpha=.5) + 
+      scale_fill_manual(values = c('#999999','#E69F00','#FC4D27','#2773FC')) + 
+      theme(legend.position ="right")+labs(title="score_mg_50c", fill="nucléotide")
+    Y_score_mg_50c_density
+
+![](README_files/figure-markdown_strict/unnamed-chunk-16-1.png)
+
+    ggplot(, aes(Y_score_mg_50c)) + 
+      geom_density(alpha=.5)
+
+![](README_files/figure-markdown_strict/unnamed-chunk-17-1.png)
+
+#### score\_50c
+
+    Y_score_50c_density <- ggplot(, aes(Y_score_50c, fill=as.factor(X))) + 
+      geom_density(alpha=.5) + 
+      scale_fill_manual(values = c('#999999','#E69F00','#FC4D27','#2773FC')) + 
+      theme(legend.position ="right")+labs(title="score_50c", fill="nucléotide")
+    Y_score_50c_density
+
+![](README_files/figure-markdown_strict/unnamed-chunk-18-1.png)
+
+    ggplot(, aes(Y_score_50c)) + 
+      geom_density(alpha=.5)
+
+![](README_files/figure-markdown_strict/unnamed-chunk-19-1.png)
+
+### Visualisation lien les Labels
+
+<!-- ## Pour chaque position -->
+<!-- ```{r} -->
+<!-- idx= 1*12 -->
+<!-- X=t(data_filtered[1+idx,]) #Nucléotide -->
+<!-- Y=t(data_filtered[11+idx,]) # Score -->
+<!-- X=X[c(-1,-2)] -->
+<!-- Y=Y[c(-1,-2)] -->
+<!-- plot(X,Y) -->
+<!-- ``` -->
+<!-- ## Pour chaque individu -->
+<!-- ```{r} -->
+<!-- X=rep(0,68) -->
+<!-- Y=rep(0,68) -->
+<!-- ``` -->

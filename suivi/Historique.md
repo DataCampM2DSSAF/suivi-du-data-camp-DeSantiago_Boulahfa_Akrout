@@ -16,4 +16,4 @@ test.
 
 **Samedi 06 Février** :
 
-Kylliann -> Travail sur les statistiques descriptives sur les labels, création de la partie visualisation du GitHub, recherche de documentation sur le Multi-Target Regressor, structuration du code
+Kylliann -> Travail sur les statistiques descriptives sur les variables,, création de la partie visualisation du GitHub, recherche de documentation sur le Multi-Target Regressor, structuration du code, tests d'exploitation de la piste de réflexion sur les prédictions successives.
