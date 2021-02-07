@@ -40,15 +40,27 @@ data_filtered <- read_csv("data_filtered.csv")
 # We add column names to the first two columns
 colnames(data_filtered)[1] <- "Position"
 colnames(data_filtered)[2] <- "Covariable"
+```
+
+
+```{r, warning=FALSE, message=FALSE}
 # We create a list which contains the names of the nucleotides:
 # 0 = A, 1 = U, 2 = C, 3 = G
 nucleotide_labels <- c("A", "U", "C", "G")
+#↨Labeller for facet_wrap
+nucleotide_labeller <- as_labeller(c("0" = "A", "1" = "U", "2" = "C", "3" = "G"))
+
 # We create a list which contains the names of the predicted loop types:
 # 0 = S, 1 = M, 2 = I, 3 = B, 4 = H, 5 = E, 6 = X
 predicted_loop_type_labels <- c("S", "M", "I", "B", "H", "E", "X")
+#↨Labeller for facet_wrap
+predicted_loop_type_labeller <- as_labeller(c("0" = "S", "1" = "M", "2" = "I",
+                                              "3" = "B", "4" = "H", "5" = "E", "6" = "X"))
+
 # Removing the accent
 data_filtered$Covariable[data_filtered$Covariable == "nucléotide"] <- "nucleotide"
-# Recoding the facto
+
+# Recoding the factor
 data_filtered$Covariable <-
   recode_factor(data_filtered$Covariable, "score_structure_boucle" = "reactivity")
 ```
@@ -215,51 +227,79 @@ scores_df %>% ggplot(aes(x = X, y = Y_score_50c)) +
   scale_color_discrete(labels = nucleotide_labels)
 ```
 
-## Density functions
+## Histograms and density functions
 
 ### Reactivity
 
 ```{r}
 # Density function without grouping.
-scores_df %>% ggplot(aes(Y_reactivity)) + geom_density()
+scores_df %>% ggplot(aes(x = Y_reactivity)) +
+  geom_histogram(aes(y = ..density..), color = "black", fill = "red", alpha = 0.1) +
+  geom_density(color = "red", size = 1)
 ```
 
 ```{r}
 # Density functions according to the nucleotides.
-scores_df %>% ggplot(aes(Y_reactivity, fill=X)) + 
-  geom_density(alpha=.5) + 
-  scale_fill_manual(values = c('#999999','#E69F00','#FC4D27','#2773FC')) + 
+scores_df %>% ggplot(aes(x = Y_reactivity, fill = X)) + 
+  geom_density(alpha = 0.5) + 
+  scale_fill_manual(values = c('#999999','#E69F00','#FC4D27','#2773FC'),
+                      labels = nucleotide_labels) + 
   theme(legend.position ="right")+labs(title="reactivity", fill="nucleotide")
 ```
 
 ```{r}
 # We use facet_wrap to have a better look on each function.
-scores_df %>% ggplot(aes(Y_reactivity, group = X, fill = X)) + 
-  geom_density() + facet_wrap(~X) + 
-  theme(legend.position ="right")+labs(title="reactivity", fill="nucleotide")
+scores_df %>% ggplot(aes(x = Y_reactivity, group = X, fill = X)) + 
+  geom_density() + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right")+labs(title="reactivity", fill="nucleotide") +
+  scale_fill_discrete(labels = nucleotide_labels)
+```
+
+```{r}
+# We use facet_wrap to have a better look on each function.
+scores_df %>% ggplot(aes(x = Y_reactivity, group = X, colour = X)) + 
+  geom_histogram(aes(y = ..density.., fill = X), alpha = 0.1) +
+  geom_density(size = 1) + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right")+
+  labs(title="reactivity", color = "nucleotide", fill = "nucleotide") +
+  scale_fill_discrete(labels = nucleotide_labels) +
+  scale_color_discrete(labels = nucleotide_labels)
 ```
 
 ### score_mg_ph10
 
 ```{r}
 # Density function without grouping.
-scores_df %>% ggplot(aes(Y_score_mg_ph10)) + geom_density()
+scores_df %>% ggplot(aes(Y_score_mg_ph10)) +
+  geom_histogram(aes(y = ..density..), color = "black", fill = "blue", alpha = 0.1) +
+  geom_density(color = "blue", size = 1)
 ```
 
 ```{r}
 scores_df %>% ggplot(aes(Y_score_mg_ph10, fill = X)) + 
   geom_density(alpha=.5) + 
   scale_fill_manual(values = c('#999999','#E69F00','#FC4D27','#2773FC')) + 
-  theme(legend.position ="right")+labs(title="score_mg_ph10", fill="nucleotide")
+  theme(legend.position ="right")+labs(title="score_mg_ph10", fill="nucleotide") +
+  scale_fill_discrete(labels = nucleotide_labels)
 ```
 
 ```{r}
 scores_df %>% ggplot(aes(Y_score_mg_ph10, group = X, fill = X)) + 
-  geom_density() + facet_wrap(~X) + 
-  theme(legend.position ="right")+labs(title="score_mg_ph10", fill="nucleotide")
+  geom_density() + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right")+labs(title="score_mg_ph10", fill="nucleotide") +
+  scale_fill_discrete(labels = nucleotide_labels)
 ```
 
-
+```{r}
+# We use facet_wrap to have a better look on each function.
+scores_df %>% ggplot(aes(x = Y_score_mg_ph10, group = X, colour = X)) + 
+  geom_histogram(aes(y = ..density.., fill = X), alpha = 0.1) +
+  geom_density(size = 1) + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right")+
+  labs(title="score_mg_ph10", color = "nucleotide", fill = "nucleotide") +
+  scale_fill_discrete(labels = nucleotide_labels) +
+  scale_color_discrete(labels = nucleotide_labels)
+```
 
 
 
@@ -268,44 +308,70 @@ scores_df %>% ggplot(aes(Y_score_mg_ph10, group = X, fill = X)) +
 
 ```{r}
 # Density function without grouping.
-scores_df %>% ggplot(aes(Y_score_ph10)) + geom_density()
+scores_df %>% ggplot(aes(Y_score_ph10)) +
+  geom_histogram(aes(y = ..density..), color = "black", fill = "orange", alpha = 0.1) +
+  geom_density(color = "darkorange", size = 1)
 ```
 
 ```{r}
 scores_df %>% ggplot(aes(Y_score_ph10, fill = X)) + 
   geom_density(alpha=.5) + 
   scale_fill_manual(values = c('#999999','#E69F00','#FC4D27','#2773FC')) + 
-  theme(legend.position ="right")+labs(title="score_ph10", fill="nucleotide")
+  theme(legend.position ="right")+labs(title="score_ph10", fill="nucleotide") +
+  scale_fill_discrete(labels = nucleotide_labels)
 ```
 
 ```{r}
 scores_df %>% ggplot(aes(Y_score_ph10, group = X, fill = X)) + 
-  geom_density() + facet_wrap(~X) + 
-  theme(legend.position ="right")+labs(title="score_ph10", fill="nucleotide")
+  geom_density() + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right")+labs(title="score_ph10", fill="nucleotide") +
+  scale_fill_discrete(labels = nucleotide_labels)
 ```
 
-
-
+```{r}
+# We use facet_wrap to have a better look on each function.
+scores_df %>% ggplot(aes(x = Y_score_ph10, group = X, colour = X)) + 
+  geom_histogram(aes(y = ..density.., fill = X), alpha = 0.1) +
+  geom_density(size = 1) + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right")+
+  labs(title="score_ph10", color = "nucleotide", fill = "nucleotide") +
+  scale_fill_discrete(labels = nucleotide_labels) +
+  scale_color_discrete(labels = nucleotide_labels)
+```
 
 ### score_mg_50c
 
 ```{r}
-scores_df %>% ggplot(aes(Y_score_mg_50c)) + geom_density()
+scores_df %>% ggplot(aes(Y_score_mg_50c)) +
+  geom_histogram(aes(y = ..density..), color = "black", fill = "purple", alpha = 0.1) +
+  geom_density(color = "purple", size = 1)
 ```
 
 ```{r}
 scores_df %>% ggplot(aes(Y_score_mg_50c, fill=as.factor(X))) + 
   geom_density(alpha=.5) + 
   scale_fill_manual(values = c('#999999','#E69F00','#FC4D27','#2773FC')) + 
-  theme(legend.position ="right")+labs(title="score_mg_50c", fill="nucleotide")
+  theme(legend.position ="right")+labs(title="score_mg_50c", fill="nucleotide") +
+  scale_fill_discrete(labels = nucleotide_labels)
 ```
 
 ```{r}
 scores_df %>% ggplot(aes(Y_score_mg_50c, group = X, fill = X)) + 
-  geom_density() + facet_wrap(~X) +
-  theme(legend.position ="right")+labs(title="score_mg_50c", fill="nucleotide")
+  geom_density() + facet_wrap(~X, labeller = nucleotide_labeller) +
+  theme(legend.position ="right")+labs(title="score_mg_50c", fill="nucleotide") +
+  scale_fill_discrete(labels = nucleotide_labels)
 ```
 
+```{r}
+# We use facet_wrap to have a better look on each function.
+scores_df %>% ggplot(aes(x = Y_score_mg_50c, group = X, colour = X)) + 
+  geom_histogram(aes(y = ..density.., fill = X), alpha = 0.1) +
+  geom_density(size = 1) + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right")+
+  labs(title="score_mg_50c", color = "nucleotide", fill = "nucleotide") +
+  scale_fill_discrete(labels = nucleotide_labels) +
+  scale_color_discrete(labels = nucleotide_labels)
+```
 
 
 
@@ -313,20 +379,145 @@ scores_df %>% ggplot(aes(Y_score_mg_50c, group = X, fill = X)) +
 ### score_50c
 
 ```{r}
-scores_df %>% ggplot(aes(Y_score_50c)) + geom_density()
+scores_df %>% ggplot(aes(Y_score_50c)) +
+  geom_histogram(aes(y = ..density..), color = "black", fill = "brown", alpha = 0.1) +
+  geom_density(color = "brown", size = 1)
 ```
 
 ```{r}
 scores_df %>% ggplot(aes(Y_score_50c, fill = X)) + 
   geom_density(alpha=.5) + 
   scale_fill_manual(values = c('#999999','#E69F00','#FC4D27','#2773FC')) + 
-  theme(legend.position ="right")+labs(title="score_50c", fill="nucleotide")
+  theme(legend.position ="right")+labs(title="score_50c", fill="nucleotide") +
+  scale_fill_discrete(labels = nucleotide_labels)
 ```
 
 ```{r}
 scores_df %>% ggplot(aes(Y_score_50c, group = X, fill = X)) + 
-  geom_density() + facet_wrap(~X) + 
-  theme(legend.position ="right")+labs(title="score_50c", fill="nucleotide")
+  geom_density() + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right")+labs(title="score_50c", fill="nucleotide") +
+  scale_fill_discrete(labels = nucleotide_labels)
+```
+
+```{r}
+# We use facet_wrap to have a better look on each function.
+scores_df %>% ggplot(aes(x = Y_score_50c, group = X, colour = X)) + 
+  geom_histogram(aes(y = ..density.., fill = X), alpha = 0.1) +
+  geom_density(size = 1) + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right")+
+  labs(title="score_50c", color = "nucleotide", fill = "nucleotide") +
+  scale_fill_discrete(labels = nucleotide_labels) +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+## Scatter plots
+
+### score_mg_50c depending on score_50c
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_50c, y = Y_score_mg_50c, color = X)) + 
+  geom_point() +
+  theme(legend.position ="right") +
+  labs(x = "score_50c", y = "score_mg_50c", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_50c, y = Y_score_mg_50c, group = X, color = X)) + 
+  geom_point() + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_50c", y = "score_mg_50c", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+### score_mg_50c depending on score_mg_ph10
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_mg_ph10, y = Y_score_mg_50c, color = X)) + 
+  geom_point() +
+  theme(legend.position ="right") +
+  labs(x="score_mg_ph10", y = "score_mg_50c", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_mg_ph10, y = Y_score_mg_50c, group = X, color = X)) + 
+  geom_point() + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right") +
+  labs(x="score_mg_ph10", y = "score_mg_50c", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+### score_mg_50c depending on score_ph10
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_ph10, y = Y_score_mg_50c, color = X)) + 
+  geom_point() +
+  theme(legend.position ="right") +
+  labs(x="score_ph10", y = "score_mg_50c", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_ph10, y = Y_score_mg_50c, group = X, color = X)) + 
+  geom_point() + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right") +
+  labs(x="score_ph10", y = "score_mg_50c", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+### score_mg_ph10 depending on score_ph10
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_ph10, y = Y_score_mg_ph10, color = X)) + 
+  geom_point() +
+  theme(legend.position ="right") +
+  labs(x = "score_ph10", y = "score_mg_ph10", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_ph10, y = Y_score_mg_ph10, group = X, color = X)) + 
+  geom_point() + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_ph10", y = "score_mg_ph10", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+### score_mg_ph10 depending on score_50c
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_50c, y = Y_score_mg_ph10, color = X)) + 
+  geom_point() +
+  theme(legend.position ="right") +
+  labs(x = "score_50c", y = "score_mg_ph10", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_50c, y = Y_score_mg_ph10, group = X, color = X)) + 
+  geom_point() + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_50c", y = "score_mg_ph10", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+### score_50c depending on score_ph10
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_ph10, y = Y_score_50c, color = X)) + 
+  geom_point() +
+  theme(legend.position ="right") +
+  labs(x = "score_ph10", y = "score_50c", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_ph10, y = Y_score_50c, group = X, color = X)) + 
+  geom_point() + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_ph10", y = "score_50c", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
 ```
 
 
