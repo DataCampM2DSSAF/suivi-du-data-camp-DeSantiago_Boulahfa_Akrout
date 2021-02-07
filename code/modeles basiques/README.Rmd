@@ -1,0 +1,67 @@
+---
+title: "R Notebook"
+output: md_document
+---
+
+## Chargement des librairies et des données.
+```{r}
+library(ggplot2)
+library(tidyverse)
+source("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/projet_fct.R")
+```
+
+```{r}
+data = read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_train.csv")
+head(data)
+data=data[,-1]
+head(data)
+```
+
+
+On filtre maintenant les données qui ont SN_filter=0 :
+
+```{r}
+print(sum(data$SN_filter==0)/68) ## Nombre d'individus dont le SN_filter=0
+data=data[data$SN_filter==1,]
+rownames(data)=1:108052
+```
+
+```{r}
+sum(data[,7:11]<0)
+for (i in 7:11){
+  data[which(data[,i]<0),i]=0
+} 
+sum(data[,7:11]<0)
+```
+
+## Création de la base train/validation :
+
+```{r}
+tamp=train_test_split(data)
+data_train=tamp$train
+data_val=tamp$val
+rm(tamp,data)
+```
+
+
+### GLM : loi Gamma
+
+```{r}
+model=glm(reactivity+1e-12~sequence,family = Gamma,data = data_train)
+summary(model)
+```
+
+
+```{r}
+model=glm(Y_reactivity+1e-12~as.factor(nucleotide)+as.factor(loop),family = Gamma)
+summary(model)
+```
+
+penser aux relations d'ordre 2 entre les variables !
+
+```{r}
+model=glm(Y_reactivity+1e-12~(as.factor(nucleotide)+as.factor(loop))^2,family = Gamma)
+summary(model)
+```
+
+### GLM : loi Gamma
