@@ -22,4 +22,4 @@ Jawad -> Travail sur la réorganisation et la visualisation des données (pie pl
 
 **Dimanche 07 Février** :
 
-Kylliann -> poursuite du travail sur les modèles basiques, recodage de la base de données.
+Kylliann -> poursuite du travail sur les modèles basiques, recodage de la base de données, MSE sur les modèles basiques pour le label 'reactivity'
