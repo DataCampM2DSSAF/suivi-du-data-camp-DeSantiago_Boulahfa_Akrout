@@ -17,145 +17,104 @@ Chargement des librairies et des données.
 
     source("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/projet_fct.R")
 
-    data_filtered = read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_filtered.csv")
-    colnames(data_filtered)[1] <- "Position"
-    colnames(data_filtered)[2] <- "Covariable"
+    data = read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_train.csv")
+    head(data)
 
-    data_filtered$Covariable = recode_factor(data_filtered$Covariable,"score_structure_boucle"="reactivity")
+    ##   X             id sequence structure predicted_loop_type signal_to_noise
+    ## 1 0 id_001f94081_1        G         .                   E           6.894
+    ## 2 1 id_001f94081_2        G         .                   E           6.894
+    ## 3 2 id_001f94081_3        A         .                   E           6.894
+    ## 4 3 id_001f94081_4        A         .                   E           6.894
+    ## 5 4 id_001f94081_5        A         .                   E           6.894
+    ## 6 5 id_001f94081_6        A         (                   S           6.894
+    ##   SN_filter reactivity deg_Mg_pH10 deg_pH10 deg_Mg_50C deg_50C
+    ## 1         1     0.3297      0.7556   2.3375     0.3581  0.6382
+    ## 2         1     1.5693      2.9830   3.5060     2.9683  3.4773
+    ## 3         1     1.1227      0.2526   0.3008     0.2589  0.9988
+    ## 4         1     0.8686      1.3789   1.0108     1.4552  1.3228
+    ## 5         1     0.7217      0.6376   0.2635     0.7244  0.7877
+    ## 6         1     0.4384      0.3313   0.3403     0.4971  0.5890
 
-    noms=colnames(data_filtered)[3:1591]
-    for (i in noms){
-      data_filtered[which(data_filtered[,i]<0),i]=0
-    }
+    data=data[,-1]
+    head(data)
 
-    nucleotide=extraction_vect(data_filtered,'nucléotide')
-    loop=extraction_vect(data_filtered,'structure_boucle')
-    Y_reactivity = extraction_vect(data_filtered,'reactivity')
-    Y_score_mg_ph10 = extraction_vect(data_filtered,'score_mg_ph10')
-    Y_score_ph10 = extraction_vect(data_filtered,'score_ph10')
-    Y_score_mg_50c = extraction_vect(data_filtered,'score_mg_50c')
-    Y_score_50c = extraction_vect(data_filtered,'score_50c')
+    ##               id sequence structure predicted_loop_type signal_to_noise
+    ## 1 id_001f94081_1        G         .                   E           6.894
+    ## 2 id_001f94081_2        G         .                   E           6.894
+    ## 3 id_001f94081_3        A         .                   E           6.894
+    ## 4 id_001f94081_4        A         .                   E           6.894
+    ## 5 id_001f94081_5        A         .                   E           6.894
+    ## 6 id_001f94081_6        A         (                   S           6.894
+    ##   SN_filter reactivity deg_Mg_pH10 deg_pH10 deg_Mg_50C deg_50C
+    ## 1         1     0.3297      0.7556   2.3375     0.3581  0.6382
+    ## 2         1     1.5693      2.9830   3.5060     2.9683  3.4773
+    ## 3         1     1.1227      0.2526   0.3008     0.2589  0.9988
+    ## 4         1     0.8686      1.3789   1.0108     1.4552  1.3228
+    ## 5         1     0.7217      0.6376   0.2635     0.7244  0.7877
+    ## 6         1     0.4384      0.3313   0.3403     0.4971  0.5890
 
-Modèles naifs
--------------
+On filtre maintenant les données qui ont SN\_filter=0 :
 
-### LM
+    print(sum(data$SN_filter==0)/68) ## Nombre d'individus dont le SN_filter=0
 
-    model=lm(Y_reactivity~as.factor(nucleotide))
-    summary(model)
+    ## [1] 811
 
-    ## 
-    ## Call:
-    ## lm(formula = Y_reactivity ~ as.factor(nucleotide))
-    ## 
-    ## Residuals:
-    ##     Min      1Q  Median      3Q     Max 
-    ## -0.5279 -0.2954 -0.1140  0.1436  6.4088 
-    ## 
-    ## Coefficients:
-    ##                         Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)             0.527889   0.002229  236.78   <2e-16 ***
-    ## as.factor(nucleotide)1 -0.186672   0.003948  -47.28   <2e-16 ***
-    ## as.factor(nucleotide)2 -0.379995   0.003704 -102.59   <2e-16 ***
-    ## as.factor(nucleotide)3 -0.146530   0.003332  -43.98   <2e-16 ***
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## Residual standard error: 0.4343 on 108048 degrees of freedom
-    ## Multiple R-squared:  0.0901, Adjusted R-squared:  0.09007 
-    ## F-statistic:  3566 on 3 and 108048 DF,  p-value: < 2.2e-16
+    data=data[data$SN_filter==1,]
+    rownames(data)=1:108052
 
-    model=lm(Y_reactivity~as.factor(nucleotide)+as.factor(loop))
-    summary(model)
+    sum(data[,7:11]<0)
 
-    ## 
-    ## Call:
-    ## lm(formula = Y_reactivity ~ as.factor(nucleotide) + as.factor(loop))
-    ## 
-    ## Residuals:
-    ##     Min      1Q  Median      3Q     Max 
-    ## -0.7128 -0.2065 -0.0589  0.1161  6.0843 
-    ## 
-    ## Coefficients:
-    ##                          Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)             0.2141660  0.0027459  77.994   <2e-16 ***
-    ## as.factor(nucleotide)1  0.0006439  0.0036827   0.175   0.8612    
-    ## as.factor(nucleotide)2 -0.1665111  0.0035298 -47.174   <2e-16 ***
-    ## as.factor(nucleotide)3  0.0064320  0.0030963   2.077   0.0378 *  
-    ## as.factor(loop)1        0.3697476  0.0066820  55.335   <2e-16 ***
-    ## as.factor(loop)2        0.2462734  0.0044703  55.091   <2e-16 ***
-    ## as.factor(loop)3        0.4652688  0.0083792  55.527   <2e-16 ***
-    ## as.factor(loop)4        0.4922422  0.0037752 130.389   <2e-16 ***
-    ## as.factor(loop)5        0.4852654  0.0035065 138.389   <2e-16 ***
-    ## as.factor(loop)6        0.3066972  0.0063411  48.366   <2e-16 ***
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## Residual standard error: 0.3845 on 108042 degrees of freedom
-    ## Multiple R-squared:  0.287,  Adjusted R-squared:  0.2869 
-    ## F-statistic:  4831 on 9 and 108042 DF,  p-value: < 2.2e-16
+    ## [1] 9918
+
+    for (i in 7:11){
+      data[which(data[,i]<0),i]=0
+    } 
+    sum(data[,7:11]<0)
+
+    ## [1] 0
+
+Création de la base train/validation :
+--------------------------------------
+
+    tamp=train_test_split(data)
+    data_train=tamp$train
+    data_val=tamp$val
+    rm(tamp,data)
+
+Modèles simples :
+-----------------
 
 ### GLM : loi Gamma
 
-    model=glm(Y_reactivity+1e-12~as.factor(nucleotide),family = Gamma)
+    model=glm(reactivity+1e-12~sequence,family = Gamma,data = data_train)
     summary(model)
 
     ## 
     ## Call:
-    ## glm(formula = Y_reactivity + 1e-12 ~ as.factor(nucleotide), family = Gamma)
+    ## glm(formula = reactivity + 1e-12 ~ sequence, family = Gamma, 
+    ##     data = data_train)
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -7.2100  -1.3359  -0.4552   0.3671   6.6143  
+    ## -7.2108  -1.3085  -0.4448   0.3661   6.4544  
     ## 
     ## Coefficients:
-    ##                        Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)             1.89434    0.01168  162.24   <2e-16 ***
-    ## as.factor(nucleotide)1  1.03635    0.02886   35.90   <2e-16 ***
-    ## as.factor(nucleotide)2  4.86729    0.05652   86.12   <2e-16 ***
-    ## as.factor(nucleotide)3  0.72787    0.02141   33.99   <2e-16 ***
+    ##             Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)  1.88410    0.01280  147.24   <2e-16 ***
+    ## sequenceC    4.85090    0.06240   77.74   <2e-16 ***
+    ## sequenceG    0.71265    0.02349   30.34   <2e-16 ***
+    ## sequenceU    0.98895    0.03133   31.57   <2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## (Dispersion parameter for Gamma family taken to be 1.441874)
+    ## (Dispersion parameter for Gamma family taken to be 1.409625)
     ## 
-    ##     Null deviance: 513847  on 108051  degrees of freedom
-    ## Residual deviance: 494705  on 108048  degrees of freedom
-    ## AIC: -186861
+    ##     Null deviance: 399029  on 86427  degrees of freedom
+    ## Residual deviance: 383771  on 86424  degrees of freedom
+    ## AIC: -139532
     ## 
     ## Number of Fisher Scoring iterations: 7
 
-    model=glm(Y_reactivity+1e-12~as.factor(nucleotide)+as.factor(loop),family = Gamma)
-    summary(model)
+penser aux relations d’ordre 2 entre les variables !
 
-    ## 
-    ## Call:
-    ## glm(formula = Y_reactivity + 1e-12 ~ as.factor(nucleotide) + 
-    ##     as.factor(loop), family = Gamma)
-    ## 
-    ## Deviance Residuals: 
-    ##     Min       1Q   Median       3Q      Max  
-    ## -7.2650  -1.1426  -0.4002   0.3192   7.2301  
-    ## 
-    ## Coefficients:
-    ##                        Estimate Std. Error  t value Pr(>|t|)    
-    ## (Intercept)             5.41195    0.03181  170.153  < 2e-16 ***
-    ## as.factor(nucleotide)1 -0.10710    0.02397   -4.468 7.92e-06 ***
-    ## as.factor(nucleotide)2  2.77159    0.05423   51.104  < 2e-16 ***
-    ## as.factor(nucleotide)3 -0.10583    0.01817   -5.825 5.73e-09 ***
-    ## as.factor(loop)1       -3.72832    0.04485  -83.120  < 2e-16 ***
-    ## as.factor(loop)2       -3.24763    0.04024  -80.705  < 2e-16 ***
-    ## as.factor(loop)3       -3.99562    0.04714  -84.761  < 2e-16 ***
-    ## as.factor(loop)4       -4.03274    0.03280 -122.967  < 2e-16 ***
-    ## as.factor(loop)5       -3.99720    0.03247 -123.092  < 2e-16 ***
-    ## as.factor(loop)6       -3.51949    0.04646  -75.755  < 2e-16 ***
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## (Dispersion parameter for Gamma family taken to be 1.367066)
-    ## 
-    ##     Null deviance: 513847  on 108051  degrees of freedom
-    ## Residual deviance: 462717  on 108042  degrees of freedom
-    ## AIC: -197279
-    ## 
-    ## Number of Fisher Scoring iterations: 7
+### GLM : loi Gamma
