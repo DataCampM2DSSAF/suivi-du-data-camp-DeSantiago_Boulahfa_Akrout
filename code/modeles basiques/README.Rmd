@@ -19,6 +19,7 @@ head(data)
 
 ```{r}
 data=data %>% mutate(sequence = as.factor(sequence)) %>% 
+  #mutate(index_sequence = as.factor(index_sequence)) %>% 
   mutate(sequence = as.factor(sequence)) %>% 
   mutate(structure = as.factor(structure)) %>% 
   mutate(predicted_loop_type = as.factor(predicted_loop_type))
@@ -28,17 +29,18 @@ data=data %>% mutate(sequence = as.factor(sequence)) %>%
 On filtre maintenant les données qui ont SN_filter=0 :
 
 ```{r}
+print(sum(is.na(data)))
 print(sum(data$SN_filter==0)/68) ## Nombre d'individus dont le SN_filter=0
 data=data[data$SN_filter==1,]
 rownames(data)=NULL#1:108052
 ```
 
 ```{r}
-sum(data[,7:11]<0)
-for (i in 7:11){
+sum(data[,8:12]<0)
+for (i in 8:12){
   data[which(data[,i]<0),i]=0
 } 
-sum(data[,7:11]<0)
+sum(data[,8:12]<0)
 ```
 
 ## Création de la base train/validation :
@@ -47,10 +49,42 @@ sum(data[,7:11]<0)
 tamp=train_test_split(data)
 data_train=tamp$train
 data_val=tamp$val
+```
+
+
+```{r}
+sum(is.na(data_train))
+sum(is.na(data_val))
+dim(data_train)[1]+dim(data_val)[1]-dim(data)[1]
+```
+
+
+```{r}
 rm(tamp,data)
 ```
 
+
 ## Modèles simples :
+
+
+```{r}
+M=mean(data_train$reactivity,na.rm = TRUE)
+S=var(data_train$reactivity,na.rm = TRUE)
+print(M)
+print(S)
+```
+
+```{r}
+ks.test(data_train$reactivity,"pexp",1/M)
+```
+
+```{r}
+alpha_LoiGamma=(M^2)/(S-M^2)
+beta_LoiGamma=(S-M^2)/M
+ks.test(data_train$reactivity,"pgamma",alpha_LoiGamma,beta_LoiGamma)
+```
+
+
 
 ### GLM : loi Gamma
 
@@ -66,6 +100,37 @@ mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
 y_pred=predict.glm(model,data_val)
 mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 ```
+
+
+
+```{r}
+model=glm(reactivity+1e-12~sequence+index_sequence,family = Gamma,data = data_train)
+summary(model)
+```
+
+```{r}
+y_pred=predict.glm(model,data_train)
+mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
+
+y_pred=predict.glm(model,data_val)
+mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
+```
+
+
+
+```{r}
+model=glm(reactivity+1e-12~sequence+index_sequence,family = Gamma,data = data_train)
+summary(model)
+```
+
+```{r}
+y_pred=predict.glm(model,data_train)
+mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
+
+y_pred=predict.glm(model,data_val)
+mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
+```
+
 
 ```{r}
 model=glm(reactivity+1e-12~sequence+predicted_loop_type,family = Gamma,data = data_train)

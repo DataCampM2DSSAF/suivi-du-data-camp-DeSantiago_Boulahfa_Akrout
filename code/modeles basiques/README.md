@@ -20,45 +20,50 @@ Chargement des librairies et des données.
     data = read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_train.csv")
     head(data)
 
-    ##   X             id sequence structure predicted_loop_type signal_to_noise
-    ## 1 0 id_001f94081_1        G         .                   E           6.894
-    ## 2 1 id_001f94081_2        G         .                   E           6.894
-    ## 3 2 id_001f94081_3        A         .                   E           6.894
-    ## 4 3 id_001f94081_4        A         .                   E           6.894
-    ## 5 4 id_001f94081_5        A         .                   E           6.894
-    ## 6 5 id_001f94081_6        A         (                   S           6.894
-    ##   SN_filter reactivity deg_Mg_pH10 deg_pH10 deg_Mg_50C deg_50C
-    ## 1         1     0.3297      0.7556   2.3375     0.3581  0.6382
-    ## 2         1     1.5693      2.9830   3.5060     2.9683  3.4773
-    ## 3         1     1.1227      0.2526   0.3008     0.2589  0.9988
-    ## 4         1     0.8686      1.3789   1.0108     1.4552  1.3228
-    ## 5         1     0.7217      0.6376   0.2635     0.7244  0.7877
-    ## 6         1     0.4384      0.3313   0.3403     0.4971  0.5890
+    ##   X             id sequence index_sequence structure predicted_loop_type
+    ## 1 0 id_001f94081_1        G              1         .                   E
+    ## 2 1 id_001f94081_2        G              2         .                   E
+    ## 3 2 id_001f94081_3        A              3         .                   E
+    ## 4 3 id_001f94081_4        A              4         .                   E
+    ## 5 4 id_001f94081_5        A              5         .                   E
+    ## 6 5 id_001f94081_6        A              6         (                   S
+    ##   signal_to_noise SN_filter reactivity deg_Mg_pH10 deg_pH10 deg_Mg_50C deg_50C
+    ## 1           6.894         1     0.3297      0.7556   2.3375     0.3581  0.6382
+    ## 2           6.894         1     1.5693      2.9830   3.5060     2.9683  3.4773
+    ## 3           6.894         1     1.1227      0.2526   0.3008     0.2589  0.9988
+    ## 4           6.894         1     0.8686      1.3789   1.0108     1.4552  1.3228
+    ## 5           6.894         1     0.7217      0.6376   0.2635     0.7244  0.7877
+    ## 6           6.894         1     0.4384      0.3313   0.3403     0.4971  0.5890
 
     data=data[,-1]
     head(data)
 
-    ##               id sequence structure predicted_loop_type signal_to_noise
-    ## 1 id_001f94081_1        G         .                   E           6.894
-    ## 2 id_001f94081_2        G         .                   E           6.894
-    ## 3 id_001f94081_3        A         .                   E           6.894
-    ## 4 id_001f94081_4        A         .                   E           6.894
-    ## 5 id_001f94081_5        A         .                   E           6.894
-    ## 6 id_001f94081_6        A         (                   S           6.894
-    ##   SN_filter reactivity deg_Mg_pH10 deg_pH10 deg_Mg_50C deg_50C
-    ## 1         1     0.3297      0.7556   2.3375     0.3581  0.6382
-    ## 2         1     1.5693      2.9830   3.5060     2.9683  3.4773
-    ## 3         1     1.1227      0.2526   0.3008     0.2589  0.9988
-    ## 4         1     0.8686      1.3789   1.0108     1.4552  1.3228
-    ## 5         1     0.7217      0.6376   0.2635     0.7244  0.7877
-    ## 6         1     0.4384      0.3313   0.3403     0.4971  0.5890
+    ##               id sequence index_sequence structure predicted_loop_type
+    ## 1 id_001f94081_1        G              1         .                   E
+    ## 2 id_001f94081_2        G              2         .                   E
+    ## 3 id_001f94081_3        A              3         .                   E
+    ## 4 id_001f94081_4        A              4         .                   E
+    ## 5 id_001f94081_5        A              5         .                   E
+    ## 6 id_001f94081_6        A              6         (                   S
+    ##   signal_to_noise SN_filter reactivity deg_Mg_pH10 deg_pH10 deg_Mg_50C deg_50C
+    ## 1           6.894         1     0.3297      0.7556   2.3375     0.3581  0.6382
+    ## 2           6.894         1     1.5693      2.9830   3.5060     2.9683  3.4773
+    ## 3           6.894         1     1.1227      0.2526   0.3008     0.2589  0.9988
+    ## 4           6.894         1     0.8686      1.3789   1.0108     1.4552  1.3228
+    ## 5           6.894         1     0.7217      0.6376   0.2635     0.7244  0.7877
+    ## 6           6.894         1     0.4384      0.3313   0.3403     0.4971  0.5890
 
     data=data %>% mutate(sequence = as.factor(sequence)) %>% 
+      #mutate(index_sequence = as.factor(index_sequence)) %>% 
       mutate(sequence = as.factor(sequence)) %>% 
       mutate(structure = as.factor(structure)) %>% 
       mutate(predicted_loop_type = as.factor(predicted_loop_type))
 
 On filtre maintenant les données qui ont SN\_filter=0 :
+
+    print(sum(is.na(data)))
+
+    ## [1] 0
 
     print(sum(data$SN_filter==0)/68) ## Nombre d'individus dont le SN_filter=0
 
@@ -67,14 +72,14 @@ On filtre maintenant les données qui ont SN\_filter=0 :
     data=data[data$SN_filter==1,]
     rownames(data)=NULL#1:108052
 
-    sum(data[,7:11]<0)
+    sum(data[,8:12]<0)
 
     ## [1] 9918
 
-    for (i in 7:11){
+    for (i in 8:12){
       data[which(data[,i]<0),i]=0
     } 
-    sum(data[,7:11]<0)
+    sum(data[,8:12]<0)
 
     ## [1] 0
 
@@ -84,10 +89,59 @@ Création de la base train/validation :
     tamp=train_test_split(data)
     data_train=tamp$train
     data_val=tamp$val
+
+    sum(is.na(data_train))
+
+    ## [1] 0
+
+    sum(is.na(data_val))
+
+    ## [1] 0
+
+    dim(data_train)[1]+dim(data_val)[1]-dim(data)[1]
+
+    ## [1] 0
+
     rm(tamp,data)
 
 Modèles simples :
 -----------------
+
+    M=mean(data_train$reactivity,na.rm = TRUE)
+    S=var(data_train$reactivity,na.rm = TRUE)
+    print(M)
+
+    ## [1] 0.3808293
+
+    print(S)
+
+    ## [1] 0.2052291
+
+    ks.test(data_train$reactivity,"pexp",1/M)
+
+    ## Warning in ks.test(data_train$reactivity, "pexp", 1/M): ties should not be
+    ## present for the Kolmogorov-Smirnov test
+
+    ## 
+    ##  One-sample Kolmogorov-Smirnov test
+    ## 
+    ## data:  data_train$reactivity
+    ## D = 0.11438, p-value < 2.2e-16
+    ## alternative hypothesis: two-sided
+
+    alpha_LoiGamma=(M^2)/(S-M^2)
+    beta_LoiGamma=(S-M^2)/M
+    ks.test(data_train$reactivity,"pgamma",alpha_LoiGamma,beta_LoiGamma)
+
+    ## Warning in ks.test(data_train$reactivity, "pgamma", alpha_LoiGamma,
+    ## beta_LoiGamma): ties should not be present for the Kolmogorov-Smirnov test
+
+    ## 
+    ##  One-sample Kolmogorov-Smirnov test
+    ## 
+    ## data:  data_train$reactivity
+    ## D = 0.97349, p-value < 2.2e-16
+    ## alternative hypothesis: two-sided
 
 ### GLM : loi Gamma
 
@@ -101,35 +155,114 @@ Modèles simples :
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -7.2092  -1.3499  -0.4633   0.3659   6.4742  
+    ## -7.2104  -1.3272  -0.4435   0.3694   6.6006  
     ## 
     ## Coefficients:
     ##             Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)  1.90591    0.01316  144.79   <2e-16 ***
-    ## sequenceC    4.86485    0.06380   76.25   <2e-16 ***
-    ## sequenceG    0.72008    0.02415   29.82   <2e-16 ***
-    ## sequenceU    1.08314    0.03299   32.83   <2e-16 ***
+    ## (Intercept)  1.88874    0.01291  146.34   <2e-16 ***
+    ## sequenceC    4.84865    0.06219   77.96   <2e-16 ***
+    ## sequenceG    0.72955    0.02368   30.81   <2e-16 ***
+    ## sequenceU    1.00427    0.03167   31.71   <2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## (Dispersion parameter for Gamma family taken to be 1.455863)
+    ## (Dispersion parameter for Gamma family taken to be 1.415217)
     ## 
-    ##     Null deviance: 417687  on 86359  degrees of freedom
-    ## Residual deviance: 402490  on 86356  degrees of freedom
-    ##   (68 observations deleted due to missingness)
-    ## AIC: -154945
+    ##     Null deviance: 412890  on 86427  degrees of freedom
+    ## Residual deviance: 397553  on 86424  degrees of freedom
+    ## AIC: -150215
     ## 
     ## Number of Fisher Scoring iterations: 7
 
     y_pred=predict.glm(model,data_train)
     mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
 
-    ## [1] 12.15227
+    ## [1] 12.03907
 
     y_pred=predict.glm(model,data_val)
     mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 
-    ## [1] 12.36544
+    ## [1] 11.8369
+
+    model=glm(reactivity+1e-12~sequence+index_sequence,family = Gamma,data = data_train)
+    summary(model)
+
+    ## 
+    ## Call:
+    ## glm(formula = reactivity + 1e-12 ~ sequence + index_sequence, 
+    ##     family = Gamma, data = data_train)
+    ## 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -7.2727  -1.2994  -0.4063   0.3710   6.2324  
+    ## 
+    ## Coefficients:
+    ##                Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)    1.085950   0.016208   67.00   <2e-16 ***
+    ## sequenceC      4.603734   0.060383   76.24   <2e-16 ***
+    ## sequenceG      0.703576   0.022296   31.56   <2e-16 ***
+    ## sequenceU      0.835956   0.030369   27.53   <2e-16 ***
+    ## index_sequence 0.029336   0.000506   57.97   <2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for Gamma family taken to be 1.332379)
+    ## 
+    ##     Null deviance: 412890  on 86427  degrees of freedom
+    ## Residual deviance: 392906  on 86423  degrees of freedom
+    ## AIC: -151689
+    ## 
+    ## Number of Fisher Scoring iterations: 7
+
+    y_pred=predict.glm(model,data_train)
+    mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
+
+    ## [1] 13.02915
+
+    y_pred=predict.glm(model,data_val)
+    mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
+
+    ## [1] 12.84319
+
+    model=glm(reactivity+1e-12~sequence+index_sequence,family = Gamma,data = data_train)
+    summary(model)
+
+    ## 
+    ## Call:
+    ## glm(formula = reactivity + 1e-12 ~ sequence + index_sequence, 
+    ##     family = Gamma, data = data_train)
+    ## 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -7.2727  -1.2994  -0.4063   0.3710   6.2324  
+    ## 
+    ## Coefficients:
+    ##                Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)    1.085950   0.016208   67.00   <2e-16 ***
+    ## sequenceC      4.603734   0.060383   76.24   <2e-16 ***
+    ## sequenceG      0.703576   0.022296   31.56   <2e-16 ***
+    ## sequenceU      0.835956   0.030369   27.53   <2e-16 ***
+    ## index_sequence 0.029336   0.000506   57.97   <2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for Gamma family taken to be 1.332379)
+    ## 
+    ##     Null deviance: 412890  on 86427  degrees of freedom
+    ## Residual deviance: 392906  on 86423  degrees of freedom
+    ## AIC: -151689
+    ## 
+    ## Number of Fisher Scoring iterations: 7
+
+    y_pred=predict.glm(model,data_train)
+    mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
+
+    ## [1] 13.02915
+
+    y_pred=predict.glm(model,data_val)
+    mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
+
+    ## [1] 12.84319
 
     model=glm(reactivity+1e-12~sequence+predicted_loop_type,family = Gamma,data = data_train)
     summary(model)
@@ -141,41 +274,40 @@ Modèles simples :
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -7.2671  -1.1540  -0.4084   0.3179   7.3083  
+    ## -7.2647  -1.1405  -0.3947   0.3209   7.1397  
     ## 
     ## Coefficients:
     ##                      Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)           1.41778    0.04217  33.619  < 2e-16 ***
-    ## sequenceC             2.72287    0.06134  44.389  < 2e-16 ***
-    ## sequenceG            -0.13009    0.02050  -6.347 2.21e-10 ***
-    ## sequenceU            -0.09976    0.02747  -3.632 0.000282 ***
-    ## predicted_loop_typeE  0.01883    0.04403   0.428 0.668920    
-    ## predicted_loop_typeH -0.03474    0.04455  -0.780 0.435513    
-    ## predicted_loop_typeI  0.76558    0.05212  14.688  < 2e-16 ***
-    ## predicted_loop_typeM  0.25569    0.05582   4.581 4.64e-06 ***
-    ## predicted_loop_typeS  4.08874    0.05375  76.065  < 2e-16 ***
-    ## predicted_loop_typeX  0.47169    0.05738   8.220  < 2e-16 ***
+    ## (Intercept)           1.45421    0.04273  34.035  < 2e-16 ***
+    ## sequenceC             2.82104    0.06005  46.976  < 2e-16 ***
+    ## sequenceG            -0.09684    0.02026  -4.779 1.77e-06 ***
+    ## sequenceU            -0.11126    0.02655  -4.191 2.78e-05 ***
+    ## predicted_loop_typeE -0.04979    0.04455  -1.118    0.264    
+    ## predicted_loop_typeH -0.06789    0.04503  -1.508    0.132    
+    ## predicted_loop_typeI  0.70276    0.05209  13.491  < 2e-16 ***
+    ## predicted_loop_typeM  0.23175    0.05593   4.143 3.43e-05 ***
+    ## predicted_loop_typeS  3.84530    0.05334  72.085  < 2e-16 ***
+    ## predicted_loop_typeX  0.46284    0.05790   7.994 1.32e-15 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## (Dispersion parameter for Gamma family taken to be 1.39113)
+    ## (Dispersion parameter for Gamma family taken to be 1.35203)
     ## 
-    ##     Null deviance: 417687  on 86359  degrees of freedom
-    ## Residual deviance: 376448  on 86350  degrees of freedom
-    ##   (68 observations deleted due to missingness)
-    ## AIC: -163297
+    ##     Null deviance: 412890  on 86427  degrees of freedom
+    ## Residual deviance: 372926  on 86418  degrees of freedom
+    ## AIC: -158192
     ## 
     ## Number of Fisher Scoring iterations: 7
 
     y_pred=predict.glm(model,data_train)
     mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
 
-    ## [1] 21.74287
+    ## [1] 20.72796
 
     y_pred=predict.glm(model,data_val)
     mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 
-    ## [1] 21.85649
+    ## [1] 20.92752
 
     model=glm(reactivity+1e-12~sequence+structure,family = Gamma,data = data_train)
     summary(model)
@@ -187,42 +319,41 @@ Modèles simples :
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -7.2472  -1.1620  -0.4167   0.3167   7.0593  
+    ## -7.2472  -1.1511  -0.4036   0.3193   6.8860  
     ## 
     ## Coefficients:
     ##             Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)  1.54851    0.01202 128.822  < 2e-16 ***
-    ## sequenceC    2.74674    0.06123  44.861  < 2e-16 ***
-    ## sequenceG   -0.10117    0.02065  -4.899 9.63e-07 ***
-    ## sequenceU   -0.08264    0.02751  -3.004  0.00266 ** 
-    ## structure(   3.61977    0.04533  79.847  < 2e-16 ***
-    ## structure)   4.30064    0.05089  84.500  < 2e-16 ***
+    ## (Intercept)  1.54052    0.01182 130.364  < 2e-16 ***
+    ## sequenceC    2.84391    0.05995  47.439  < 2e-16 ***
+    ## sequenceG   -0.07334    0.02042  -3.592 0.000328 ***
+    ## sequenceU   -0.09286    0.02661  -3.489 0.000484 ***
+    ## structure(   3.42065    0.04328  79.038  < 2e-16 ***
+    ## structure)   4.10802    0.04883  84.126  < 2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## (Dispersion parameter for Gamma family taken to be 1.388129)
+    ## (Dispersion parameter for Gamma family taken to be 1.349477)
     ## 
-    ##     Null deviance: 417687  on 86359  degrees of freedom
-    ## Residual deviance: 377382  on 86354  degrees of freedom
-    ##   (68 observations deleted due to missingness)
-    ## AIC: -162997
+    ##     Null deviance: 412890  on 86427  degrees of freedom
+    ## Residual deviance: 373868  on 86422  degrees of freedom
+    ## AIC: -157886
     ## 
     ## Number of Fisher Scoring iterations: 7
 
     y_pred=predict.glm(model,data_val)
     mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 
-    ## [1] 21.95029
+    ## [1] 21.04261
 
     y_pred=predict.glm(model,data_train)
     mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
 
-    ## [1] 21.8413
+    ## [1] 20.83038
 
     y_pred=predict.glm(model,data_val)
     mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 
-    ## [1] 21.95029
+    ## [1] 21.04261
 
     model=glm(reactivity+1e-12~(sequence+predicted_loop_type)^2,family = Gamma,data = data_train)
     summary(model)
@@ -234,59 +365,58 @@ Modèles simples :
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -7.2856  -1.1420  -0.3987   0.3206   6.9218  
+    ## -7.2847  -1.1310  -0.3853   0.3259   6.7660  
     ## 
     ## Coefficients:
     ##                                Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)                     1.40331    0.05152  27.236  < 2e-16 ***
-    ## sequenceC                       1.44899    0.22019   6.581 4.71e-11 ***
-    ## sequenceG                      -0.07116    0.11341  -0.627  0.53035    
-    ## sequenceU                       0.13009    0.12258   1.061  0.28858    
-    ## predicted_loop_typeE            0.14257    0.05496   2.594  0.00948 ** 
-    ## predicted_loop_typeH           -0.07328    0.05555  -1.319  0.18714    
-    ## predicted_loop_typeI            0.63041    0.06625   9.516  < 2e-16 ***
-    ## predicted_loop_typeM            0.29843    0.06935   4.303 1.68e-05 ***
-    ## predicted_loop_typeS            3.45970    0.08175  42.321  < 2e-16 ***
-    ## predicted_loop_typeX            0.51040    0.07140   7.149 8.84e-13 ***
-    ## sequenceC:predicted_loop_typeE  0.54816    0.25340   2.163  0.03053 *  
-    ## sequenceG:predicted_loop_typeE -0.37941    0.11693  -3.245  0.00118 ** 
-    ## sequenceU:predicted_loop_typeE  0.08587    0.14309   0.600  0.54845    
-    ## sequenceC:predicted_loop_typeH -0.32768    0.23457  -1.397  0.16244    
-    ## sequenceG:predicted_loop_typeH  0.31069    0.12135   2.560  0.01046 *  
-    ## sequenceU:predicted_loop_typeH -0.17255    0.12985  -1.329  0.18389    
-    ## sequenceC:predicted_loop_typeI  1.12180    0.29949   3.746  0.00018 ***
-    ## sequenceG:predicted_loop_typeI  0.21134    0.13207   1.600  0.10957    
-    ## sequenceU:predicted_loop_typeI  0.29387    0.16462   1.785  0.07425 .  
-    ## sequenceC:predicted_loop_typeM  0.63791    0.33998   1.876  0.06062 .  
-    ## sequenceG:predicted_loop_typeM -0.03098    0.15166  -0.204  0.83812    
-    ## sequenceU:predicted_loop_typeM -0.36287    0.15796  -2.297  0.02161 *  
-    ## sequenceC:predicted_loop_typeS  3.98727    0.25205  15.819  < 2e-16 ***
-    ## sequenceG:predicted_loop_typeS  0.69686    0.14003   4.976 6.49e-07 ***
-    ## sequenceU:predicted_loop_typeS -0.08032    0.14950  -0.537  0.59109    
-    ## sequenceC:predicted_loop_typeX  0.89023    0.34942   2.548  0.01084 *  
-    ## sequenceG:predicted_loop_typeX  0.10769    0.15781   0.682  0.49500    
-    ## sequenceU:predicted_loop_typeX -0.50334    0.15902  -3.165  0.00155 ** 
+    ## (Intercept)                     1.44060    0.05177  27.828  < 2e-16 ***
+    ## sequenceC                       1.47906    0.22667   6.525 6.83e-11 ***
+    ## sequenceG                      -0.09373    0.11688  -0.802 0.422615    
+    ## sequenceU                       0.17307    0.12529   1.381 0.167169    
+    ## predicted_loop_typeE            0.06701    0.05508   1.217 0.223789    
+    ## predicted_loop_typeH           -0.09863    0.05565  -1.772 0.076317 .  
+    ## predicted_loop_typeI            0.58541    0.06568   8.913  < 2e-16 ***
+    ## predicted_loop_typeM            0.27673    0.06918   4.000 6.34e-05 ***
+    ## predicted_loop_typeS            3.20303    0.07930  40.390  < 2e-16 ***
+    ## predicted_loop_typeX            0.51137    0.07159   7.143 9.22e-13 ***
+    ## sequenceC:predicted_loop_typeE  0.73265    0.25872   2.832 0.004629 ** 
+    ## sequenceG:predicted_loop_typeE -0.31115    0.12023  -2.588 0.009656 ** 
+    ## sequenceU:predicted_loop_typeE -0.02599    0.14234  -0.183 0.855121    
+    ## sequenceC:predicted_loop_typeH -0.32041    0.24051  -1.332 0.182796    
+    ## sequenceG:predicted_loop_typeH  0.33427    0.12432   2.689 0.007173 ** 
+    ## sequenceU:predicted_loop_typeH -0.22727    0.13210  -1.720 0.085358 .  
+    ## sequenceC:predicted_loop_typeI  1.01808    0.29771   3.420 0.000627 ***
+    ## sequenceG:predicted_loop_typeI  0.24814    0.13436   1.847 0.064768 .  
+    ## sequenceU:predicted_loop_typeI  0.17158    0.16303   1.052 0.292578    
+    ## sequenceC:predicted_loop_typeM  0.73190    0.34647   2.112 0.034648 *  
+    ## sequenceG:predicted_loop_typeM  0.01084    0.15346   0.071 0.943698    
+    ## sequenceU:predicted_loop_typeM -0.42223    0.15848  -2.664 0.007718 ** 
+    ## sequenceC:predicted_loop_typeS  3.97180    0.25539  15.552  < 2e-16 ***
+    ## sequenceG:predicted_loop_typeS  0.80263    0.14064   5.707 1.15e-08 ***
+    ## sequenceU:predicted_loop_typeS -0.09597    0.14934  -0.643 0.520478    
+    ## sequenceC:predicted_loop_typeX  0.95917    0.35338   2.714 0.006643 ** 
+    ## sequenceG:predicted_loop_typeX  0.13715    0.16085   0.853 0.393860    
+    ## sequenceU:predicted_loop_typeX -0.59221    0.16110  -3.676 0.000237 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## (Dispersion parameter for Gamma family taken to be 1.357517)
+    ## (Dispersion parameter for Gamma family taken to be 1.319714)
     ## 
-    ##     Null deviance: 417687  on 86359  degrees of freedom
-    ## Residual deviance: 374690  on 86332  degrees of freedom
-    ##   (68 observations deleted due to missingness)
-    ## AIC: -163844
+    ##     Null deviance: 412890  on 86427  degrees of freedom
+    ## Residual deviance: 371216  on 86400  degrees of freedom
+    ## AIC: -158727
     ## 
     ## Number of Fisher Scoring iterations: 7
 
     y_pred=predict.glm(model,data_train)
     mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
 
-    ## [1] 26.299
+    ## [1] 25.06465
 
     y_pred=predict.glm(model,data_val)
     mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 
-    ## [1] 26.52275
+    ## [1] 25.22244
 
 ### GLM : loi gaussienne inverse
 
@@ -304,31 +434,30 @@ Modèles simples :
     ## 
     ## Coefficients:
     ##             Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)  1.65615    0.01779   93.10   <2e-16 ***
-    ## sequenceC    4.36739    0.05623   77.67   <2e-16 ***
-    ## sequenceG   -0.29673    0.02335  -12.71   <2e-16 ***
-    ## sequenceU    0.35179    0.03230   10.89   <2e-16 ***
+    ## (Intercept)  1.68486    0.01812  92.990   <2e-16 ***
+    ## sequenceC    4.43360    0.05638  78.638   <2e-16 ***
+    ## sequenceG   -0.31290    0.02360 -13.259   <2e-16 ***
+    ## sequenceU    0.26619    0.03201   8.316   <2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## (Dispersion parameter for inverse.gaussian family taken to be 3.34674)
+    ## (Dispersion parameter for inverse.gaussian family taken to be 3.306347)
     ## 
-    ##     Null deviance: 5.773e+15  on 86359  degrees of freedom
-    ## Residual deviance: 5.773e+15  on 86356  degrees of freedom
-    ##   (68 observations deleted due to missingness)
-    ## AIC: 1518963
+    ##     Null deviance: 5.716e+15  on 86427  degrees of freedom
+    ## Residual deviance: 5.716e+15  on 86424  degrees of freedom
+    ## AIC: 1528985
     ## 
     ## Number of Fisher Scoring iterations: 2
 
     y_pred=predict.glm(model,data_train)
     mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
 
-    ## [1] 8.22108
+    ## [1] 8.512683
 
     y_pred=predict.glm(model,data_val)
     mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 
-    ## [1] 8.381501
+    ## [1] 8.334633
 
     model=glm(reactivity+1e-12~sequence+predicted_loop_type,family = inverse.gaussian,data = data_train)
     summary(model)
@@ -343,38 +472,37 @@ Modèles simples :
     ## -1e+06  -4e+00  -1e+00   0e+00   4e+00  
     ## 
     ## Coefficients:
-    ##                      Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)           1.21136    0.06235  19.428  < 2e-16 ***
-    ## sequenceC             3.88797    0.07637  50.907  < 2e-16 ***
-    ## sequenceG            -0.46374    0.03023 -15.340  < 2e-16 ***
-    ## sequenceU            -0.54778    0.03536 -15.493  < 2e-16 ***
-    ## predicted_loop_typeE  0.10668    0.06484   1.645   0.0999 .  
-    ## predicted_loop_typeH -0.06007    0.06413  -0.937   0.3489    
-    ## predicted_loop_typeI  0.94197    0.07620  12.362  < 2e-16 ***
-    ## predicted_loop_typeM  0.83118    0.10147   8.192 2.61e-16 ***
-    ## predicted_loop_typeS  3.43535    0.06848  50.163  < 2e-16 ***
-    ## predicted_loop_typeX  1.39428    0.11162  12.492  < 2e-16 ***
+    ##                       Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)           1.308426   0.065623  19.939  < 2e-16 ***
+    ## sequenceC             3.945655   0.075231  52.447  < 2e-16 ***
+    ## sequenceG            -0.454782   0.030437 -14.942  < 2e-16 ***
+    ## sequenceU            -0.613459   0.034301 -17.885  < 2e-16 ***
+    ## predicted_loop_typeE -0.007874   0.067904  -0.116   0.9077    
+    ## predicted_loop_typeH -0.118771   0.067311  -1.765   0.0776 .  
+    ## predicted_loop_typeI  0.926198   0.079533  11.645  < 2e-16 ***
+    ## predicted_loop_typeM  0.777724   0.102776   7.567 3.85e-14 ***
+    ## predicted_loop_typeS  3.248329   0.071248  45.592  < 2e-16 ***
+    ## predicted_loop_typeX  1.377212   0.114049  12.076  < 2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## (Dispersion parameter for inverse.gaussian family taken to be 4.102904)
+    ## (Dispersion parameter for inverse.gaussian family taken to be 4.017043)
     ## 
-    ##     Null deviance: 5.773e+15  on 86359  degrees of freedom
-    ## Residual deviance: 5.773e+15  on 86350  degrees of freedom
-    ##   (68 observations deleted due to missingness)
-    ## AIC: 1518975
+    ##     Null deviance: 5.716e+15  on 86427  degrees of freedom
+    ## Residual deviance: 5.716e+15  on 86418  degrees of freedom
+    ## AIC: 1528997
     ## 
     ## Number of Fisher Scoring iterations: 2
 
     y_pred=predict.glm(model,data_train)
     mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
 
-    ## [1] 18.92863
+    ## [1] 18.64159
 
     y_pred=predict.glm(model,data_val)
     mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 
-    ## [1] 19.11309
+    ## [1] 18.64405
 
     model=glm(reactivity+1e-12~sequence+structure,family = inverse.gaussian,data = data_train)
     summary(model)
@@ -390,38 +518,37 @@ Modèles simples :
     ## 
     ## Coefficients:
     ##             Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)  1.41820    0.02119   66.92   <2e-16 ***
-    ## sequenceC    3.67541    0.07587   48.45   <2e-16 ***
-    ## sequenceG   -0.47786    0.03009  -15.88   <2e-16 ***
-    ## sequenceU   -0.43609    0.03808  -11.45   <2e-16 ***
-    ## structure(   2.13385    0.03945   54.09   <2e-16 ***
-    ## structure)   5.65062    0.06526   86.58   <2e-16 ***
+    ## (Intercept)  1.44304    0.02143   67.33   <2e-16 ***
+    ## sequenceC    3.75581    0.07496   50.10   <2e-16 ***
+    ## sequenceG   -0.48384    0.03016  -16.04   <2e-16 ***
+    ## sequenceU   -0.50264    0.03697  -13.60   <2e-16 ***
+    ## structure(   2.04481    0.03856   53.03   <2e-16 ***
+    ## structure)   5.52119    0.06417   86.04   <2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## (Dispersion parameter for inverse.gaussian family taken to be 4.184415)
+    ## (Dispersion parameter for inverse.gaussian family taken to be 4.097235)
     ## 
-    ##     Null deviance: 5.773e+15  on 86359  degrees of freedom
-    ## Residual deviance: 5.773e+15  on 86354  degrees of freedom
-    ##   (68 observations deleted due to missingness)
-    ## AIC: 1518967
+    ##     Null deviance: 5.716e+15  on 86427  degrees of freedom
+    ## Residual deviance: 5.716e+15  on 86422  degrees of freedom
+    ## AIC: 1528989
     ## 
     ## Number of Fisher Scoring iterations: 2
 
     y_pred=predict.glm(model,data_val)
     mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 
-    ## [1] 23.91191
+    ## [1] 23.51589
 
     y_pred=predict.glm(model,data_train)
     mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
 
-    ## [1] 23.73905
+    ## [1] 23.37254
 
     y_pred=predict.glm(model,data_val)
     mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 
-    ## [1] 23.91191
+    ## [1] 23.51589
 
     model=glm(reactivity+1e-12~(sequence+predicted_loop_type)^2,family = inverse.gaussian,data = data_train)
     summary(model)
@@ -436,53 +563,52 @@ Modèles simples :
     ## -1e+06  -4e+00  -1e+00   0e+00   5e+00  
     ## 
     ## Coefficients:
-    ##                                 Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)                     1.059261   0.083694  12.656  < 2e-16 ***
-    ## sequenceC                       2.664401   0.430177   6.194 5.90e-10 ***
-    ## sequenceG                      -0.069149   0.185963  -0.372  0.71001    
-    ## sequenceU                       0.321057   0.223228   1.438  0.15037    
-    ## predicted_loop_typeE            0.416500   0.091803   4.537 5.72e-06 ***
-    ## predicted_loop_typeH            0.005120   0.091485   0.056  0.95537    
-    ## predicted_loop_typeI            1.016843   0.112996   8.999  < 2e-16 ***
-    ## predicted_loop_typeM            1.007162   0.140922   7.147 8.94e-13 ***
-    ## predicted_loop_typeS            3.112932   0.108952  28.572  < 2e-16 ***
-    ## predicted_loop_typeX            1.535778   0.152070  10.099  < 2e-16 ***
-    ## sequenceC:predicted_loop_typeE  4.117225   0.586767   7.017 2.29e-12 ***
-    ## sequenceG:predicted_loop_typeE -0.759993   0.192162  -3.955 7.66e-05 ***
-    ## sequenceU:predicted_loop_typeE -0.006908   0.265926  -0.026  0.97928    
-    ## sequenceC:predicted_loop_typeH -1.879375   0.442908  -4.243 2.21e-05 ***
-    ## sequenceG:predicted_loop_typeH  0.054886   0.196514   0.279  0.78002    
-    ## sequenceU:predicted_loop_typeH -0.338550   0.236582  -1.431  0.15243    
-    ## sequenceC:predicted_loop_typeI  1.020304   0.534473   1.909  0.05627 .  
-    ## sequenceG:predicted_loop_typeI -0.450008   0.211894  -2.124  0.03369 *  
-    ## sequenceU:predicted_loop_typeI  0.535079   0.307329   1.741  0.08168 .  
-    ## sequenceC:predicted_loop_typeM  2.543782   0.779688   3.263  0.00110 ** 
-    ## sequenceG:predicted_loop_typeM -0.492857   0.276346  -1.783  0.07451 .  
-    ## sequenceU:predicted_loop_typeM -0.937936   0.312090  -3.005  0.00265 ** 
-    ## sequenceC:predicted_loop_typeS  9.787797   0.461562  21.206  < 2e-16 ***
-    ## sequenceG:predicted_loop_typeS  1.418238   0.208328   6.808 9.98e-12 ***
-    ## sequenceU:predicted_loop_typeS -1.864796   0.237714  -7.845 4.39e-15 ***
-    ## sequenceC:predicted_loop_typeX  6.486076   1.026350   6.320 2.64e-10 ***
-    ## sequenceG:predicted_loop_typeX -0.453821   0.294669  -1.540  0.12354    
-    ## sequenceU:predicted_loop_typeX -1.026843   0.349015  -2.942  0.00326 ** 
+    ##                                Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)                     1.14980    0.08813  13.047  < 2e-16 ***
+    ## sequenceC                       2.84254    0.46008   6.178 6.51e-10 ***
+    ## sequenceG                      -0.09439    0.20184  -0.468 0.640029    
+    ## sequenceU                       0.36298    0.23335   1.556 0.119824    
+    ## predicted_loop_typeE            0.30735    0.09611   3.198 0.001384 ** 
+    ## predicted_loop_typeH           -0.05668    0.09556  -0.593 0.553090    
+    ## predicted_loop_typeI            1.04445    0.11812   8.843  < 2e-16 ***
+    ## predicted_loop_typeM            0.95276    0.14320   6.653 2.88e-11 ***
+    ## predicted_loop_typeS            3.02110    0.11252  26.848  < 2e-16 ***
+    ## predicted_loop_typeX            1.50672    0.15398   9.785  < 2e-16 ***
+    ## sequenceC:predicted_loop_typeE  4.29608    0.59868   7.176 7.24e-13 ***
+    ## sequenceG:predicted_loop_typeE -0.72780    0.20754  -3.507 0.000454 ***
+    ## sequenceU:predicted_loop_typeE -0.20341    0.26824  -0.758 0.448269    
+    ## sequenceC:predicted_loop_typeH -2.05221    0.47178  -4.350 1.36e-05 ***
+    ## sequenceG:predicted_loop_typeH  0.12996    0.21214   0.613 0.540152    
+    ## sequenceU:predicted_loop_typeH -0.40924    0.24576  -1.665 0.095870 .  
+    ## sequenceC:predicted_loop_typeI  0.62750    0.55255   1.136 0.256114    
+    ## sequenceG:predicted_loop_typeI -0.48430    0.22723  -2.131 0.033068 *  
+    ## sequenceU:predicted_loop_typeI  0.22073    0.30921   0.714 0.475314    
+    ## sequenceC:predicted_loop_typeM  2.78064    0.80763   3.443 0.000576 ***
+    ## sequenceG:predicted_loop_typeM -0.52449    0.28143  -1.864 0.062369 .  
+    ## sequenceU:predicted_loop_typeM -0.95217    0.32193  -2.958 0.003101 ** 
+    ## sequenceC:predicted_loop_typeS  9.15644    0.48806  18.761  < 2e-16 ***
+    ## sequenceG:predicted_loop_typeS  1.44645    0.22257   6.499 8.13e-11 ***
+    ## sequenceU:predicted_loop_typeS -2.05342    0.24698  -8.314  < 2e-16 ***
+    ## sequenceC:predicted_loop_typeX  6.57622    1.02164   6.437 1.23e-10 ***
+    ## sequenceG:predicted_loop_typeX -0.31914    0.31189  -1.023 0.306194    
+    ## sequenceU:predicted_loop_typeX -1.15256    0.35494  -3.247 0.001166 ** 
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## (Dispersion parameter for inverse.gaussian family taken to be 4.402705)
+    ## (Dispersion parameter for inverse.gaussian family taken to be 4.30825)
     ## 
-    ##     Null deviance: 5.773e+15  on 86359  degrees of freedom
-    ## Residual deviance: 5.773e+15  on 86332  degrees of freedom
-    ##   (68 observations deleted due to missingness)
-    ## AIC: 1519011
+    ##     Null deviance: 5.716e+15  on 86427  degrees of freedom
+    ## Residual deviance: 5.716e+15  on 86400  degrees of freedom
+    ## AIC: 1529033
     ## 
     ## Number of Fisher Scoring iterations: 2
 
     y_pred=predict.glm(model,data_train)
     mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
 
-    ## [1] 50.87498
+    ## [1] 48.93385
 
     y_pred=predict.glm(model,data_val)
     mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 
-    ## [1] 51.70544
+    ## [1] 48.54993

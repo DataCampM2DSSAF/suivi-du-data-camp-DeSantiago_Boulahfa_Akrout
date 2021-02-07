@@ -35,8 +35,8 @@ train_test_split=function(data,proportion=0.8){
   nb_individu_prop=floor(N/68*proportion)
   
   res=rep(0,nb_individu_prop*68)
-  for (i in 1:floor(nb_individu_prop)){
-    res[((i-1)*68+1):(i*68)]=seq((idx[i]*68+1),(idx[i]*68)+68)
+  for (i in 1:nb_individu_prop){
+    res[((i-1)*68+1):(i*68)]=seq( ((idx[i]-1)*68+1) , (idx[i]*68) )
   }
   train=data[res,]
   val=data[-res,]
