@@ -241,17 +241,89 @@ associés.
 
 ### Visualisation du lien entre les Labels
 
-<!-- ## Pour chaque position -->
-<!-- ```{r} -->
-<!-- idx= 1*12 -->
-<!-- X=t(data_filtered[1+idx,]) #Nucléotide -->
-<!-- Y=t(data_filtered[11+idx,]) # Score -->
-<!-- X=X[c(-1,-2)] -->
-<!-- Y=Y[c(-1,-2)] -->
-<!-- plot(X,Y) -->
-<!-- ``` -->
-<!-- ## Pour chaque individu -->
-<!-- ```{r} -->
-<!-- X=rep(0,68) -->
-<!-- Y=rep(0,68) -->
-<!-- ``` -->
+    cor_label=cor(cbind(Y_reactivity,Y_score_mg_ph10,Y_score_ph10,Y_score_mg_50c,Y_score_50c))
+
+    library(corrplot)
+
+    ## corrplot 0.84 loaded
+
+    corrplot(cor_label, type="upper", order="hclust", tl.col="black", tl.srt=45)
+
+![](README_files/figure-markdown_strict/unnamed-chunk-21-1.png)
+
+On constate que quasiment tous les labels sont assez fortement corrélés,
+et même dans le même sens. Cela indique qu’une augmentation d’une
+dégradation est certainement en lien avec l’augmentation des autres.
+
+    symnum(cor_label, abbr.colnames=FALSE)
+
+    ##                 Y_reactivity Y_score_mg_ph10 Y_score_ph10 Y_score_mg_50c
+    ## Y_reactivity    1                                                       
+    ## Y_score_mg_ph10 ,            1                                          
+    ## Y_score_ph10    .            ,               1                          
+    ## Y_score_mg_50c  ,            +               ,            1             
+    ## Y_score_50c     ,            ,               ,            +             
+    ##                 Y_score_50c
+    ## Y_reactivity               
+    ## Y_score_mg_ph10            
+    ## Y_score_ph10               
+    ## Y_score_mg_50c             
+    ## Y_score_50c     1          
+    ## attr(,"legend")
+    ## [1] 0 ' ' 0.3 '.' 0.6 ',' 0.8 '+' 0.9 '*' 0.95 'B' 1
+
+    library(Hmisc)
+
+    ## Loading required package: lattice
+
+    ## Loading required package: survival
+
+    ## Loading required package: Formula
+
+    ## 
+    ## Attaching package: 'Hmisc'
+
+    ## The following objects are masked from 'package:dplyr':
+    ## 
+    ##     src, summarize
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     format.pval, units
+
+    rcorr(cbind(Y_reactivity,Y_score_mg_ph10,Y_score_ph10,Y_score_mg_50c,Y_score_50c))
+
+    ##                 Y_reactivity Y_score_mg_ph10 Y_score_ph10 Y_score_mg_50c
+    ## Y_reactivity            1.00            0.64         0.58           0.68
+    ## Y_score_mg_ph10         0.64            1.00         0.75           0.87
+    ## Y_score_ph10            0.58            0.75         1.00           0.77
+    ## Y_score_mg_50c          0.68            0.87         0.77           1.00
+    ## Y_score_50c             0.67            0.73         0.77           0.82
+    ##                 Y_score_50c
+    ## Y_reactivity           0.67
+    ## Y_score_mg_ph10        0.73
+    ## Y_score_ph10           0.77
+    ## Y_score_mg_50c         0.82
+    ## Y_score_50c            1.00
+    ## 
+    ## n= 108052 
+    ## 
+    ## 
+    ## P
+    ##                 Y_reactivity Y_score_mg_ph10 Y_score_ph10 Y_score_mg_50c
+    ## Y_reactivity                  0               0            0            
+    ## Y_score_mg_ph10  0                            0            0            
+    ## Y_score_ph10     0            0                            0            
+    ## Y_score_mg_50c   0            0               0                         
+    ## Y_score_50c      0            0               0            0            
+    ##                 Y_score_50c
+    ## Y_reactivity     0         
+    ## Y_score_mg_ph10  0         
+    ## Y_score_ph10     0         
+    ## Y_score_mg_50c   0         
+    ## Y_score_50c
+
+Les p\_values étant toutes extrêment faibles (même, ici = 0), on réfute
+l’hypothèse H0 du test de correlation qui est une supposition de la
+non-correlation des variables. Donc, de par ce test, on peut affirmer
+que les labels sont corrélés.

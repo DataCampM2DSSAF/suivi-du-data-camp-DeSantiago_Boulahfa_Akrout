@@ -195,25 +195,26 @@ ggplot(, aes(Y_score_50c)) +
 ### Visualisation du lien entre les Labels
 
 
+```{r}
+cor_label=cor(cbind(Y_reactivity,Y_score_mg_ph10,Y_score_ph10,Y_score_mg_50c,Y_score_50c))
+```
+
+```{r}
+library(corrplot)
+corrplot(cor_label, type="upper", order="hclust", tl.col="black", tl.srt=45)
+```
+
+On constate que quasiment tous les labels sont assez fortement corrélés, et même dans le même sens. Cela indique qu'une augmentation d'une dégradation est certainement en lien avec l'augmentation des autres.
+
+```{r}
+symnum(cor_label, abbr.colnames=FALSE)
+```
+
+```{r}
+library(Hmisc)
+rcorr(cbind(Y_reactivity,Y_score_mg_ph10,Y_score_ph10,Y_score_mg_50c,Y_score_50c))
+```
 
 
-
-
-<!-- ## Pour chaque position -->
-<!-- ```{r} -->
-<!-- idx= 1*12 -->
-<!-- X=t(data_filtered[1+idx,]) #Nucléotide -->
-<!-- Y=t(data_filtered[11+idx,]) # Score -->
-
-<!-- X=X[c(-1,-2)] -->
-<!-- Y=Y[c(-1,-2)] -->
-<!-- plot(X,Y) -->
-<!-- ``` -->
-
-
-<!-- ## Pour chaque individu -->
-<!-- ```{r} -->
-<!-- X=rep(0,68) -->
-<!-- Y=rep(0,68) -->
-<!-- ``` -->
-
+Les p_values étant toutes extrêment faibles (même, ici = 0), on réfute l'hypothèse H0 du test de correlation qui est une supposition de la non-correlation des variables.
+Donc, de par ce test, on peut affirmer que les labels sont corrélés.
