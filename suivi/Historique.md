@@ -25,3 +25,10 @@ Jawad -> Travail sur la réorganisation et la visualisation des données (pie pl
 Kylliann -> poursuite du travail sur les modèles basiques, recodage de la base de données, MSE sur les modèles basiques pour le label 'reactivity'
 
 Jawad -> Visualisation des données: ajout de scatter plots et d'histogrammes, recherche d'informations sur le jeu de données (https://www.kaggle.com/c/stanford-covid-vaccine/discussion/182320)
+
+**Lundi 08 Février** :
+
+Kylliann -> Ajout de la correlation entre les labels. Travail sur les modèles simple. Première soumission avec un modèle simple. Le score obtenu est 1.96760
+
+![](Historique.png)
+
