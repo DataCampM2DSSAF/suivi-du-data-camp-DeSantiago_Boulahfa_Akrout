@@ -19,7 +19,7 @@ head(data)
 
 ```{r}
 data=data %>% mutate(sequence = as.factor(sequence)) %>% 
-  mutate(index_sequence = as.factor(index_sequence)) %>% 
+  #mutate(index_sequence = as.factor(index_sequence)) %>% 
   mutate(seq_be = as.factor(seq_be)) %>% 
   mutate(seq_af = as.factor(seq_af)) %>% 
   mutate(sequence = as.factor(sequence)) %>% 
@@ -100,10 +100,10 @@ Ici on fera énormément de tests pour essayer de voir quels variables apportent
 model=glm(reactivity+1e-12~sequence,family = Gamma,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 ```
 
@@ -111,10 +111,10 @@ mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 model=glm(reactivity+1e-12~(sequence+seq_be+seq_af),family = Gamma,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 ```
 
@@ -122,10 +122,10 @@ mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 model=glm(reactivity+1e-12~sequence+index_sequence,family = Gamma,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 ```
 
@@ -133,10 +133,10 @@ mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 ```{r}
 model=glm(reactivity+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data_train)
 #summary(model)
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 ```
 
@@ -146,10 +146,10 @@ mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 model=glm(reactivity+1e-12~sequence+structure+index_sequence,family = Gamma,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
 
 ```
@@ -161,10 +161,10 @@ mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
 model=glm(reactivity+1e-12~sequence,family = inverse.gaussian,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 ```
 
@@ -172,10 +172,10 @@ mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 model=glm(reactivity+1e-12~(sequence+seq_be+seq_af),family = inverse.gaussian,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 ```
 
@@ -183,10 +183,10 @@ mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 model=glm(reactivity+1e-12~sequence+index_sequence,family = inverse.gaussian,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 ```
 
@@ -194,10 +194,10 @@ mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 ```{r}
 model=glm(reactivity+1e-12~sequence+predicted_loop_type,family = inverse.gaussian,data = data_train)
 #summary(model)
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 ```
 
@@ -207,10 +207,10 @@ mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 model=glm(reactivity+1e-12~sequence+structure,family = inverse.gaussian,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
 ```
 
@@ -225,10 +225,10 @@ Ici on fera énormément de tests pour essayer de voir quels variables apportent
 model=glm(deg_Mg_pH10+1e-12~sequence,family = Gamma,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
 ```
 
@@ -236,10 +236,10 @@ mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
 model=glm(deg_Mg_pH10+1e-12~(sequence+seq_be+seq_af),family = Gamma,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
 ```
 
@@ -247,10 +247,10 @@ mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
 model=glm(deg_Mg_pH10+1e-12~sequence+index_sequence,family = Gamma,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
 ```
 
@@ -258,10 +258,10 @@ mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
 ```{r}
 model=glm(deg_Mg_pH10+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data_train)
 #summary(model)
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
 ```
 
@@ -271,10 +271,10 @@ mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
 model=glm(deg_Mg_pH10+1e-12~sequence+structure+index_sequence,family = Gamma,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
 
 ```
@@ -286,10 +286,10 @@ mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
 model=glm(deg_Mg_pH10+1e-12~sequence,family = inverse.gaussian,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
 ```
 
@@ -297,10 +297,10 @@ mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
 model=glm(deg_Mg_pH10+1e-12~(sequence+seq_be),family = inverse.gaussian,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
 ```
 
@@ -308,10 +308,10 @@ mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
 model=glm(deg_Mg_pH10+1e-12~sequence+index_sequence,family = inverse.gaussian,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
 ```
 
@@ -319,10 +319,10 @@ mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
 ```{r}
 model=glm(deg_Mg_pH10+1e-12~sequence+predicted_loop_type,family = inverse.gaussian,data = data_train)
 #summary(model)
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
 ```
 
@@ -331,10 +331,10 @@ mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
 model=glm(deg_Mg_pH10+1e-12~sequence+structure,family = inverse.gaussian,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
 ```
 
@@ -350,10 +350,10 @@ Ici on fera énormément de tests pour essayer de voir quels variables apportent
 model=glm(deg_pH10+1e-12~sequence,family = Gamma,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
 ```
 
@@ -361,10 +361,10 @@ mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
 model=glm(deg_pH10+1e-12~(sequence+seq_be+seq_af),family = Gamma,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
 ```
 
@@ -372,10 +372,10 @@ mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
 model=glm(deg_pH10+1e-12~sequence+index_sequence,family = Gamma,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
 ```
 
@@ -383,10 +383,10 @@ mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
 ```{r}
 model=glm(deg_pH10+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data_train)
 #summary(model)
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
 ```
 
@@ -396,10 +396,10 @@ mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
 model=glm(deg_pH10+1e-12~sequence+structure+index_sequence,family = Gamma,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
 
 ```
@@ -411,10 +411,10 @@ mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
 model=glm(deg_pH10+1e-12~sequence,family = inverse.gaussian,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
 ```
 
@@ -422,10 +422,10 @@ mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
 model=glm(deg_pH10+1e-12~(sequence+seq_be),family = inverse.gaussian,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
 ```
 
@@ -434,10 +434,10 @@ mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
 model=glm(deg_pH10+1e-12~index_sequence,family = inverse.gaussian,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
 ```
 
@@ -445,10 +445,10 @@ mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
 ```{r}
 model=glm(deg_pH10+1e-12~sequence+predicted_loop_type,family = inverse.gaussian,data = data_train)
 #summary(model)
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
 ```
 
@@ -457,10 +457,10 @@ mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
 model=glm(deg_pH10+1e-12~sequence+structure,family = inverse.gaussian,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
 ```
 
@@ -476,10 +476,10 @@ Ici on fera énormément de tests pour essayer de voir quels variables apportent
 model=glm(deg_Mg_50C+1e-12~sequence,family = Gamma,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
 ```
 
@@ -487,10 +487,10 @@ mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
 model=glm(deg_Mg_50C+1e-12~(sequence+seq_be+seq_af),family = Gamma,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
 ```
 
@@ -498,10 +498,10 @@ mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
 model=glm(deg_Mg_50C+1e-12~sequence+index_sequence,family = Gamma,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
 ```
 
@@ -509,10 +509,10 @@ mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
 ```{r}
 model=glm(deg_Mg_50C+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data_train)
 #summary(model)
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
 ```
 
@@ -522,10 +522,10 @@ mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
 model=glm(deg_Mg_50C+1e-12~sequence+structure+index_sequence,family = Gamma,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
 
 ```
@@ -537,10 +537,10 @@ mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
 model=glm(deg_Mg_50C+1e-12~sequence,family = inverse.gaussian,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
 ```
 
@@ -548,10 +548,10 @@ mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
 model=glm(deg_Mg_50C+1e-12~(sequence+seq_be),family = inverse.gaussian,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
 ```
 
@@ -559,10 +559,10 @@ mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
 model=glm(deg_Mg_50C+1e-12~sequence+index_sequence,family = inverse.gaussian,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
 ```
 
@@ -570,10 +570,10 @@ mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
 ```{r}
 model=glm(deg_Mg_50C+1e-12~sequence+predicted_loop_type,family = inverse.gaussian,data = data_train)
 #summary(model)
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
 ```
 
@@ -582,10 +582,10 @@ mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
 model=glm(deg_Mg_50C+1e-12~sequence+structure+index_sequence,family = inverse.gaussian,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
 ```
 
@@ -601,10 +601,10 @@ Ici on fera énormément de tests pour essayer de voir quels variables apportent
 model=glm(deg_50C+1e-12~sequence,family = Gamma,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
 ```
 
@@ -612,10 +612,10 @@ mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
 model=glm(deg_50C+1e-12~(sequence+seq_be+seq_af),family = Gamma,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
 ```
 
@@ -623,10 +623,10 @@ mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
 model=glm(deg_50C+1e-12~sequence+index_sequence,family = Gamma,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
 ```
 
@@ -634,10 +634,10 @@ mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
 ```{r}
 model=glm(deg_50C+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data_train)
 #summary(model)
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
 ```
 
@@ -647,10 +647,10 @@ mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
 model=glm(deg_50C+1e-12~sequence+structure+index_sequence,family = Gamma,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
 
 ```
@@ -662,10 +662,10 @@ mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
 model=glm(deg_50C+1e-12~sequence,family = inverse.gaussian,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
 ```
 
@@ -673,10 +673,10 @@ mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
 model=glm(deg_50C+1e-12~(sequence+seq_be+seq_af),family = inverse.gaussian,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
 ```
 
@@ -684,10 +684,10 @@ mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
 model=glm(deg_50C+1e-12~sequence+index_sequence,family = inverse.gaussian,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
 ```
 
@@ -695,10 +695,10 @@ mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
 ```{r}
 model=glm(deg_50C+1e-12~sequence+predicted_loop_type+index_sequence,family = inverse.gaussian,data = data_train)
 #summary(model)
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
 ```
 
@@ -707,10 +707,10 @@ mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
 model=glm(deg_50C+1e-12~sequence+structure+index_sequence,family = inverse.gaussian,data = data_train)
 #summary(model)
 
-y_pred=predict.glm(model,data_val)
+y_pred=predict.glm(model,data_val,type="response")
 mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_train)
+y_pred=predict.glm(model,data_train,type="response")
 mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
 ```
 
@@ -718,7 +718,7 @@ mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
 
 
 
-## Première soumission :
+## Première vrai soumission :
 
 ```{r}
 data_test=read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_test.csv")
@@ -732,20 +732,20 @@ head(data_test)
 ```
 
 ```{r}
-model_reactivity=glm(reactivity+1e-12~sequence,family = inverse.gaussian,data = data)
-model_deg_Mg_pH10=glm(deg_Mg_pH10+1e-12~sequence,family = inverse.gaussian,data = data)
-model_deg_pH10=glm(deg_pH10+1e-12~sequence,family = inverse.gaussian,data = data)
-model_deg_Mg_50C=glm(deg_Mg_50C+1e-12~sequence,family = inverse.gaussian,data = data)
-model_deg_50C=glm(deg_50C+1e-12~sequence,family = inverse.gaussian,data = data)
+model_reactivity=glm(reactivity+1e-12~sequence,family = Gamma,data = data)
+model_deg_Mg_pH10=glm(deg_Mg_pH10+1e-12~sequence,family = Gamma,data = data)
+model_deg_pH10=glm(deg_pH10+1e-12~sequence,family = Gamma,data = data)
+model_deg_Mg_50C=glm(deg_Mg_50C+1e-12~sequence,family = Gamma,data = data)
+model_deg_50C=glm(deg_50C+1e-12~sequence,family = Gamma,data = data)
 ```
 
 ```{r}
 y_test_pred=read.csv(file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
-y_test_pred[,2]=predict.glm(model_reactivity,data_test)
-y_test_pred[,3]=predict.glm(model_deg_Mg_pH10,data_test)
-y_test_pred[,4]=predict.glm(model_deg_pH10,data_test)
-y_test_pred[,5]=predict.glm(model_deg_Mg_50C,data_test)
-y_test_pred[,6]=predict.glm(model_deg_50C,data_test)
+y_test_pred[,2]=predict.glm(model_reactivity,data_test,type = "response")
+y_test_pred[,3]=predict.glm(model_deg_Mg_pH10,data_test,type = "response")
+y_test_pred[,4]=predict.glm(model_deg_pH10,data_test,type = "response")
+y_test_pred[,5]=predict.glm(model_deg_Mg_50C,data_test,type = "response")
+y_test_pred[,6]=predict.glm(model_deg_50C,data_test,type = "response")
 ```
 
 ```{r}
@@ -753,8 +753,53 @@ head(y_test_pred)
 ```
 
 ```{r}
-#write.csv(y_test_pred,file = "sample_submission_2.csv",row.names=FALSE)
+#write.csv(y_test_pred,file = "sample_submission.csv",row.names=FALSE)
 #tamp=read.csv(file = "sample_submission_2.csv")
 #head(tamp)
 ```
 
+
+
+## Deuxième soumission :
+
+```{r}
+data_test=read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_test.csv")
+data_test= data_test%>% mutate(sequence = as.factor(sequence)) %>% 
+  #mutate(index_sequence = as.factor(index_sequence)) %>% 
+  mutate(seq_be = as.factor(seq_be)) %>% 
+  mutate(seq_af = as.factor(seq_af)) %>% 
+  mutate(structure = as.factor(structure)) %>% 
+  mutate(predicted_loop_type = as.factor(predicted_loop_type))
+head(data_test)
+```
+
+```{r}
+model_reactivity=glm(reactivity+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data)
+model_deg_Mg_pH10=glm(deg_Mg_pH10+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data)
+model_deg_pH10=glm(deg_pH10+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data)
+model_deg_Mg_50C=glm(deg_Mg_50C+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data)
+model_deg_50C=glm(deg_50C+1e-12 ~ sequence+predicted_loop_type+index_sequence,family = Gamma,data = data)
+```
+
+```{r}
+y_test_pred=read.csv(file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
+y_test_pred[,2]=predict.glm(model_reactivity,data_test,type = "response")-1e-12
+y_test_pred[,3]=predict.glm(model_deg_Mg_pH10,data_test,type = "response")-1e-12
+y_test_pred[,4]=predict.glm(model_deg_pH10,data_test,type = "response")-1e-12
+y_test_pred[,5]=predict.glm(model_deg_Mg_50C,data_test,type = "response")-1e-12
+y_test_pred[,6]=predict.glm(model_deg_50C,data_test,type = "response")-1e-12
+```
+
+```{r}
+head(y_test_pred)
+```
+
+```{r}
+write.csv(y_test_pred,file = "sample_submission.csv",row.names=FALSE)
+#tamp=read.csv(file = "sample_submission_2.csv")
+#head(tamp)
+```
+
+
+Public score : 0.49538
+Public score : 0.42532
