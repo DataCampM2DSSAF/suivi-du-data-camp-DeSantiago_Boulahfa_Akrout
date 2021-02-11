@@ -91,6 +91,19 @@ for (i in seq(1:nrow(nucleotide_df))){
 }
 X <- unlist(X)
 
+# We gather the predicted loop types values for all positions in a dataframe.
+predicted_loop_type_df <- data_filtered %>% subset(Covariable == "structure_boucle") %>%
+  dplyr::select(-c(Position, Covariable))
+# The row index changed, so we change it back.
+# The row index is now the position in the sequence.
+rownames(predicted_loop_type_df) <- NULL
+
+predicted_loop_type_vector <- c()
+for (i in seq(1:nrow(predicted_loop_type_df))){
+  predicted_loop_type_vector <- c(predicted_loop_type_vector, predicted_loop_type_df[i, ])
+}
+predicted_loop_type_vector <- unlist(predicted_loop_type_vector)
+
 # We gather the reactivity values for all positions in a dataframe.
 reactivity_df <- data_filtered %>%
   subset(Covariable == "reactivity") %>%
@@ -147,14 +160,16 @@ Y_score_ph10 <- unlist(Y_score_ph10)
 Y_score_mg_50c <- unlist(Y_score_mg_50c)
 Y_score_50c <- unlist(Y_score_50c)
 
-scores_df <- data.frame(X, Y_reactivity, Y_score_mg_ph10, Y_score_ph10, Y_score_mg_50c, Y_score_50c)
+scores_df <- data.frame(X, Y_reactivity, Y_score_mg_ph10,
+                        Y_score_ph10, Y_score_mg_50c, Y_score_50c)
 ```
 
 
 # Data visualisation
 
-
 ## Nucleotides
+
+### Pie plot
 
 ```{r}
 nucleotide_table <- data.frame(table(X)) %>% mutate(Proportion = Freq/sum(Freq)) %>%
@@ -183,6 +198,8 @@ nucleotide_table %>%
             color = "white", size = 5) +
   ggtitle("Nucleotides pie plot")
 ```
+
+### Boxplots
 
 ```{r}
 scores_df %>% ggplot(aes(x = X, y = Y_reactivity)) + geom_boxplot(aes(color = X)) + coord_flip() +
@@ -226,6 +243,42 @@ scores_df %>% ggplot(aes(x = X, y = Y_score_50c)) +
   scale_x_discrete(labels = nucleotide_labels) +
   scale_color_discrete(labels = nucleotide_labels)
 ```
+
+## Predicted loop types
+
+### Pie plot
+
+```{r}
+predicted_loop_type_table <- data.frame(table(predicted_loop_type_vector)) %>%
+  mutate(Proportion = Freq/sum(Freq)) %>%
+  arrange(predicted_loop_type_vector) %>%
+  mutate(Percent = 100*Proportion) %>%
+  mutate(Predicted_loop_type = predicted_loop_type_labels) %>%
+  dplyr::select(predicted_loop_type_vector, Predicted_loop_type, everything())
+colnames(predicted_loop_type_table)[3] <- "Count"
+```
+
+```{r}
+predicted_loop_type_table
+```
+
+```{r}
+predicted_loop_type_table$Count %>% sum()
+```
+
+```{r, fig.height=8, fig.width=10}
+predicted_loop_type_table %>%
+  mutate(ypos = cumsum(Proportion) - 0.5 * Proportion) %>%
+  ggplot(aes(x="", y=Proportion, fill=Predicted_loop_type)) +
+  geom_bar(stat="identity", width=1, color="black") +
+  coord_polar(theta = "y", direction = 1, start = 0) + theme_void() +
+  geom_text(aes(x = 1.63, label = paste0(round(100*Proportion, 2), "%")),
+            position = position_stack(vjust = 0.5),
+            color = "black", size = 4.5) +
+  ggtitle("Predicted loop type pie plot")
+```
+
+### Boxplots
 
 ## Histograms and density functions
 
@@ -387,7 +440,7 @@ scores_df %>% ggplot(aes(Y_score_50c)) +
 ```{r}
 scores_df %>% ggplot(aes(Y_score_50c, fill = X)) + 
   geom_density(alpha=.5) + 
-  scale_fill_manual(values = c('#999999','#E69F00','#FC4D27','#2773FC')) + 
+  #scale_fill_manual(values = c('#999999','#E69F00','#FC4D27','#2773FC')) + 
   theme(legend.position ="right")+labs(title="score_50c", fill="nucleotide") +
   scale_fill_discrete(labels = nucleotide_labels)
 ```
