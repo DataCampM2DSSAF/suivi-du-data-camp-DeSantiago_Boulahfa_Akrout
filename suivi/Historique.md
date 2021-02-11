@@ -37,3 +37,5 @@ Kylliann -> Ajout de la correlation entre les labels. Travail sur les modèles s
 Kylliann -> Modification des modèles + correction d'une erreur lors de la prédiction des labels. 2 soumissions ont été faites.
 La première est la correction de la 1ère soumission, avec un score public de 0.54976 et un score privé de 0.46440.
 La deuxième soumission avec un modèle légèrement plus complexe a obtenu un score public de 0.42532 et un score privé de 0.49538.
+
+Jawad -> Ajout d'un pie plot pour les predicted_loop_type.
