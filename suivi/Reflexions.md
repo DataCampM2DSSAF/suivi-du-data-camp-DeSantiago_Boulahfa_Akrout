@@ -1,2 +1,0 @@
-# Questions liées au projet :
-
