@@ -1,0 +1,861 @@
+---
+output: github_document
+---
+
+# Data Camp Open Vaccine: Statistiques descriptives
+### AKROUT Leyth, BOULAHFA Jawad, DE SANTIAGO Kylliann
+#### M2 Data Science: Santé, Assurance, Finance
+#### Université d'Evry Val d'Essonne
+### 12 février 2021
+
+> [Réorganisation des données](#data)
+
+> [Data visualisation](#visualisation)
+
+```{r, echo=FALSE}
+rm(list = ls())
+```
+
+```{r, results='hide', message=FALSE, warning=FALSE, echo=FALSE}
+## Packages
+
+library(tidyverse)
+library(reshape2)
+library(data.table)
+
+library(gtools)
+
+library(forcats)
+
+library(stringr)
+library(stringi)
+library(readr)
+
+library(caret)
+
+library(corrplot)
+library(Hmisc)
+```
+
+<a id="data"></a>
+
+# Réorganisation des données
+
+Tout d'abord, nous avons filtré la base de données initiale en ne gardant que les individus ayant un rapport Signal/Noise > 1. Nous voulons, pour l'instant, nous focaliser sur des données qui ne sont pas trop perturbées par le bruit, afin de pouvoir comprendre au mieux la base de données.
+
+```{r, warning=FALSE, message=FALSE}
+# We start by loading the data
+data_filtered <- read_csv("data_filtered.csv")
+# We add column names to the first two columns
+colnames(data_filtered)[1] <- "Position"
+colnames(data_filtered)[2] <- "Covariable"
+```
+
+
+Suite à un changement de nom de la variable `reactivity`, on la renomme à nouveau pour rester cohérent avec les données initiales.
+On retire également l'accent sur le mot "nucléotide" à cause d'un problème d'affichage de ce caractère sur R.
+On construit diverses listes qui nous serviront dans la construction des légendes de nos graphiques.
+```{r, warning=FALSE, message=FALSE}
+# We create a list which contains the names of the nucleotides:
+# 0 = A, 1 = U, 2 = C, 3 = G
+nucleotide_labels <- c("A", "U", "C", "G")
+#↨Labeller for facet_wrap
+nucleotide_labeller <- as_labeller(c("0" = "A", "1" = "U", "2" = "C", "3" = "G"))
+
+# We create a list which contains the names of the predicted loop types:
+# 0 = S, 1 = M, 2 = I, 3 = B, 4 = H, 5 = E, 6 = X
+predicted_loop_type_labels <- c("S", "M", "I", "B", "H", "E", "X")
+#↨Labeller for facet_wrap
+predicted_loop_type_labeller <- as_labeller(c("0" = "S", "1" = "M", "2" = "I",
+                                              "3" = "B", "4" = "H", "5" = "E", "6" = "X"))
+
+# Removing the accent
+data_filtered$Covariable[data_filtered$Covariable == "nucléotide"] <- "nucleotide"
+
+# Recoding the factor
+data_filtered$Covariable <-
+  recode_factor(data_filtered$Covariable, "score_structure_boucle" = "reactivity")
+```
+
+On retire le mot "Position" dans chaque ligne de la colonne `Position`.
+```{r}
+# As "Position" is the column name, we can just extract the number inside the strings to keep the position information.
+data_filtered <- data_filtered %>%
+  mutate(Position = as.factor(parse_number(as.character(Position))))
+```
+
+On affiche un aperçu du jeu de données modifié.
+Chaque colonne (sauf les deux premières) indique les informations pour l'individu concerné.
+Par exemple : ARN 1 nous donne l'information de l'individu du train 1.
+De plus, la séquence d'ARN que nous disposons par individu est de longueur 68 (longueur dont nous possédont les labels).
+
+Pour chaque nucléotide de la séquence, nous avons 12 informations:
+
+- Le type de nucléotide, codé avec des entiers: 0="A", 1 = "U", 2 = "C", 3="G".
+
+- Le type de la boucle, codé avec des entiers également:
+0 = "S", 1 = "M", 2 = "I", 3 = "B", 4 = "H", 5 = "E", 6 = "X".
+D'après la description du jeu de données sur Kaggle, on a plus précisément:
+S = paired "Stem", M = Multiloop, I = Internal loop, B = Bulge, H = Hairpin loop,
+E = dangling End, X = eXternal loop. 
+
+- Les erreurs de mesure des labels (5).
+
+- Les labels (5).
+```{r}
+# First 25 lines of the data frame
+head(data_filtered, n = 25)
+```
+
+Ici nous constatons que nous n'avons aucune valeur manquante, donc nous pouvons travailler avec le jeu de données sans avoir à gérer des `NaNs`.
+```{r}
+sum(is.na(data_filtered))
+```
+
+On peut apercevoir que pour l'individu n°3 nous avons des valeurs négatives.
+Ces valeurs sont en fait celles des labels prédits qui sont donc négatives.
+Or, les labels quantifient la dégradation des nucléotides donc avoir une valeur négative implique une résistance à la dégradation, d'où la mise à 0 de ces valeurs.
+Cela nous permettra ainsi d'avoir les lois des labels sur $\mathbb{R}^+$.
+```{r}
+which(data_filtered[,5]<0)
+```
+
+```{r}
+data_filtered[190,]
+```
+
+```{r}
+data_filtered[695,]
+```
+
+La séquence ARN étant un enchainement de nucléotides, on suppose fortement que la position de ceux-ci dans la séquence ont une influence sur les labels.
+Cependant, afin d'avoir une première approche sur cette base de données, nous allons explorer l'information contenue dans celle-ci sans prendre en compte la position des nucléotides pour le moment.
+
+La variable X contient la liste de tous les nucléotides pour toutes les positions sur la séquence et pour tout les individus. La variable predicted_loop_type contient la liste de tout les types de boucles pour toutes les positions sur la séquence et pour tout les individus.
+Les autres variables représentent chacun un label.
+
+On construit ensuite un data frame score_df qui regroupe toutes les valeurs des labels, ainsi que tout les nucléotides et les types de boucles de façon séquentielle (i.e. pour chaque individu et pour chaque position sur la séquence). Ce data frame nous servira à construire tout les graphiques qui suivent.
+```{r}
+# We gather the nucleotides values for all positions in a dataframe.
+nucleotide_df <- data_filtered %>% subset(Covariable == "nucleotide") %>%
+  dplyr::select(-c(Position, Covariable)) %>% mutate_all(as.factor)
+# The row index changed, so we change it back.
+# The row index is now the position in the sequence.
+rownames(nucleotide_df) <- NULL
+
+# X is a vector which will contain all nucleotides values (for each position and each individual)
+X <- c()
+for (i in seq(1:nrow(nucleotide_df))){
+  X <- c(X, nucleotide_df[i, ])
+}
+X <- unlist(X)
+
+# We gather the predicted loop types values for all positions in a dataframe.
+predicted_loop_type_df <- data_filtered %>% subset(Covariable == "structure_boucle") %>%
+  dplyr::select(-c(Position, Covariable))
+# The row index changed, so we change it back.
+# The row index is now the position in the sequence.
+rownames(predicted_loop_type_df) <- NULL
+
+predicted_loop_type_vector <- c()
+for (i in seq(1:nrow(predicted_loop_type_df))){
+  predicted_loop_type_vector <- c(predicted_loop_type_vector, predicted_loop_type_df[i, ])
+}
+predicted_loop_type_vector <- unlist(predicted_loop_type_vector)
+
+# We gather the reactivity values for all positions in a dataframe.
+reactivity_df <- data_filtered %>%
+  subset(Covariable == "reactivity") %>%
+  dplyr::select(-c(Position, Covariable))
+rownames(reactivity_df) <- NULL
+
+# We gather the score_mg_ph10 values for all positions in a dataframe.
+score_mg_ph10_df <- data_filtered %>%
+  subset(Covariable == "score_mg_ph10") %>%
+  dplyr::select(-c(Position, Covariable))
+# The row index changed, so we change it back.
+# The row index is now the position in the sequence.
+rownames(score_mg_ph10_df) <- NULL
+
+# We gather the score_ph10 values for all positions in a dataframe.
+score_ph10_df <- data_filtered %>%
+  subset(Covariable == "score_ph10") %>%
+  dplyr::select(-c(Position, Covariable))
+# The row index changed, so we change it back.
+# The row index is now the position in the sequence.
+rownames(score_ph10_df) <- NULL
+
+# We gather the score_mg_50c values for all positions in a dataframe.
+score_mg_50c_df <- (data_filtered[data_filtered[,2]=='score_mg_50c',]) %>% dplyr::select(-c(Position, Covariable))
+# The row index changed, so we change it back.
+# The row index is now the position in the sequence.
+rownames(score_mg_50c_df) <- NULL
+
+# We gather the score_50c values for all positions in a dataframe.
+score_50c_df <- data_filtered %>%
+  subset(Covariable == "score_50c") %>%
+  dplyr::select(-c(Position, Covariable))
+# The row index changed, so we change it back.
+# The row index is now the position in the sequence.
+rownames(score_50c_df) <- NULL
+
+# Y_reactivity, ... ,Y_score_50c are vector which will contain all score values (for each position and each individual)
+Y_reactivity <- c()
+Y_score_mg_ph10 <- c()
+Y_score_ph10 <- c()
+Y_score_mg_50c <- c()
+Y_score_50c <- c()
+for (i in seq(1:nrow(nucleotide_df)))
+{
+  Y_reactivity <- c(Y_reactivity, reactivity_df[i, ])
+  Y_score_mg_ph10 <- c(Y_score_mg_ph10, score_mg_ph10_df[i, ])
+  Y_score_ph10 <- c(Y_score_ph10, score_ph10_df[i, ])
+  Y_score_mg_50c <- c(Y_score_mg_50c, score_mg_50c_df[i, ])
+  Y_score_50c <- c(Y_score_50c, score_50c_df[i, ])
+} 
+Y_reactivity <- unlist(Y_reactivity)
+Y_score_mg_ph10 <- unlist(Y_score_mg_ph10)
+Y_score_ph10 <- unlist(Y_score_ph10)
+Y_score_mg_50c <- unlist(Y_score_mg_50c)
+Y_score_50c <- unlist(Y_score_50c)
+
+scores_df <- data.frame(X, predicted_loop_type_vector, 
+                        Y_reactivity, Y_score_mg_ph10,
+                        Y_score_ph10, Y_score_mg_50c, Y_score_50c) %>%
+  mutate(predicted_loop_type_vector = as.factor(predicted_loop_type_vector))
+```
+
+```{r}
+head(scores_df)
+```
+
+
+<a id="visualisation"></a>
+
+# Data visualisation
+
+## Nucleotides
+
+### Pie plot
+
+```{r}
+nucleotide_table <- data.frame(table(X)) %>% mutate(Proportion = Freq/sum(Freq)) %>%
+  mutate(Percent = 100*Proportion) %>% mutate(Nucleotide = nucleotide_labels) %>%
+  dplyr::select(X, Nucleotide, everything())
+colnames(nucleotide_table)[3] <- "Count" 
+```
+
+On constate que nous avons $108052$ nucléotides en tout. Toutefois, on peut voir une plus grande représentation de nucléotides `A` et `G`, comparé aux nucléotides `C` et `U`.
+Cette information pourra potentiellement avoir son influence, même si nous avons une quantité assez importante de chaque nucléotide ainsi que les valeurs de labels associés.
+```{r}
+nucleotide_table
+```
+
+```{r}
+# There are 108 052 nucleotides in the dataset
+nucleotide_table$Count %>% sum()
+```
+
+```{r}
+nucleotide_table %>%
+  mutate(ypos = cumsum(Proportion) - 0.5 * Proportion) %>%
+  ggplot(aes(x="", y=Proportion, fill=Nucleotide)) +
+  geom_bar(stat="identity", width=1, color="black") +
+  coord_polar(theta = "y", direction = 1) + theme_void() +
+  geom_text(aes(label = paste0(round(100*Proportion, 2), "%")),
+            position = position_stack(vjust = 0.5),
+            color = "white", size = 5) +
+  ggtitle("Nucleotides pie plot")
+```
+
+### Boxplots
+
+```{r}
+scores_df %>% ggplot(aes(x = X, y = Y_reactivity)) + geom_boxplot(aes(color = X)) +
+  labs(x = "nucleotides", y = "reactivity", color = "nucleotides") +
+  scale_x_discrete(labels = nucleotide_labels) +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+
+```{r}
+scores_df %>% ggplot(aes(x = X, y = Y_score_mg_ph10)) +
+  geom_boxplot(aes(color = X)) +
+  labs(x = "nucleotides", y = "score_mg_ph10", color = "nucleotides") +
+  scale_x_discrete(labels = nucleotide_labels) +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+
+```{r}
+scores_df %>% ggplot(aes(x = X, y = Y_score_ph10)) +
+  geom_boxplot(aes(color = X)) +
+  labs(x = "nucleotides", y = "score_ph10", color = "nucleotides") +
+  scale_x_discrete(labels = nucleotide_labels) +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r}
+scores_df %>% ggplot(aes(x = X, y = Y_score_mg_50c)) +
+  geom_boxplot(aes(color = X)) +
+  labs(x = "nucleotides", y = "score_mg_50c", color = "nucleotides") +
+  scale_x_discrete(labels = nucleotide_labels) +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+
+```{r}
+scores_df %>% ggplot(aes(x = X, y = Y_score_50c)) +
+  geom_boxplot(aes(color = X)) +
+  labs(x = "nucleotides", y ="score_50c", color = "nucleotides") +
+  scale_x_discrete(labels = nucleotide_labels) +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+## Predicted loop types
+
+### Pie plot
+
+```{r}
+predicted_loop_type_table <- data.frame(table(predicted_loop_type_vector)) %>%
+  mutate(Proportion = Freq/sum(Freq)) %>%
+  arrange(predicted_loop_type_vector) %>%
+  mutate(Percent = 100*Proportion) %>%
+  mutate(Predicted_loop_type = predicted_loop_type_labels) %>%
+  dplyr::select(predicted_loop_type_vector, Predicted_loop_type, everything())
+colnames(predicted_loop_type_table)[3] <- "Count"
+```
+
+```{r}
+predicted_loop_type_table
+```
+
+On obtient le même nombre que le nombre de nucléotides. C'est cohérent.
+```{r}
+predicted_loop_type_table$Count %>% sum()
+```
+
+```{r, fig.height=8, fig.width=10}
+predicted_loop_type_table %>%
+  mutate(ypos = cumsum(Proportion) - 0.5 * Proportion) %>%
+  ggplot(aes(x="", y=Proportion, fill=Predicted_loop_type)) +
+  geom_bar(stat="identity", width=1, color="black") +
+  coord_polar(theta = "y", direction = 1, start = 0) + theme_void() +
+  geom_text(aes(x = 1.63, label = paste0(round(100*Proportion, 2), "%")),
+            position = position_stack(vjust = 0.5),
+            color = "black", size = 4.5) +
+  ggtitle("Predicted loop type pie plot")
+```
+
+### Boxplots
+
+```{r}
+scores_df %>% ggplot(aes(x = predicted_loop_type_vector, y = Y_reactivity)) +
+  geom_boxplot(aes(color = predicted_loop_type_vector)) +
+  labs(x = "predicted_loop_type", y = "reactivity", color = "predicted_loop_type") +
+  scale_x_discrete(labels = predicted_loop_type_labels) +
+  scale_color_discrete(labels = predicted_loop_type_labels)
+```
+
+
+```{r}
+scores_df %>% ggplot(aes(x = predicted_loop_type_vector, y = Y_score_mg_ph10)) +
+  geom_boxplot(aes(color = predicted_loop_type_vector)) +
+  labs(x = "predicted loop type", y = "score_mg_ph10", color = "predicted_loop_type") +
+  scale_x_discrete(labels = predicted_loop_type_labels) +
+  scale_color_discrete(labels = predicted_loop_type_labels)
+```
+
+
+```{r}
+scores_df %>% ggplot(aes(x = predicted_loop_type_vector, y = Y_score_ph10)) +
+  geom_boxplot(aes(color = predicted_loop_type_vector)) +
+  labs(x = "predicted_loop_type", y = "score_ph10", color = "predicted_loop_type") +
+  scale_x_discrete(labels = predicted_loop_type_labels) +
+  scale_color_discrete(labels = predicted_loop_type_labels)
+```
+
+```{r}
+scores_df %>% ggplot(aes(x = predicted_loop_type_vector, y = Y_score_mg_50c)) +
+  geom_boxplot(aes(color = predicted_loop_type_vector)) +
+  labs(x = "predicted_loop_type", y = "score_mg_50c", color = "predicted_loop_type") +
+  scale_x_discrete(labels = predicted_loop_type_labels) +
+  scale_color_discrete(labels = predicted_loop_type_labels)
+```
+
+
+```{r}
+scores_df %>% ggplot(aes(x = predicted_loop_type_vector, y = Y_score_50c)) +
+  geom_boxplot(aes(color = predicted_loop_type_vector)) +
+  labs(x = "predicted_loop_type", y = "score_50c", color = "predicted_loop_type") +
+  scale_x_discrete(labels = predicted_loop_type_labels) +
+  scale_color_discrete(labels = predicted_loop_type_labels)
+```
+
+
+
+## Histograms and density functions
+
+### Reactivity
+
+```{r}
+# Density function without grouping.
+scores_df %>% ggplot(aes(x = Y_reactivity)) +
+  geom_histogram(aes(y = ..density..), color = "black", fill = "red", alpha = 0.1) +
+  geom_density(color = "red", size = 1)
+```
+
+```{r}
+# We use facet_wrap to have a better look on each function.
+scores_df %>% ggplot(aes(x = Y_reactivity, group = X, colour = X)) + 
+  geom_histogram(aes(y = ..density.., fill = X), alpha = 0.1) +
+  geom_density(size = 1) + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right")+
+  labs(title = "reactivity", color = "nucleotide", fill = "nucleotide") +
+  scale_fill_discrete(labels = nucleotide_labels) +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r,fig.height=8, fig.width=10}
+# We use facet_wrap to have a better look on each function.
+scores_df %>% ggplot(aes(x = Y_reactivity,
+                         group = predicted_loop_type_vector,
+                         colour = predicted_loop_type_vector)) + 
+  geom_histogram(aes(y = ..density.., fill = predicted_loop_type_vector), alpha = 0.1) +
+  geom_density(size = 1) +
+  facet_wrap(~predicted_loop_type_vector, labeller = predicted_loop_type_labeller) + 
+  theme(legend.position ="right")+
+  labs(title = "reactivity", color = "predicted_loop_type", fill = "predicted_loop_type") +
+  scale_fill_discrete(labels = predicted_loop_type_labels) +
+  scale_color_discrete(labels = predicted_loop_type_labels)
+```
+
+### score_mg_ph10
+
+```{r}
+# Density function without grouping.
+scores_df %>% ggplot(aes(Y_score_mg_ph10)) +
+  geom_histogram(aes(y = ..density..), color = "black", fill = "blue", alpha = 0.1) +
+  geom_density(color = "blue", size = 1)
+```
+
+```{r}
+# We use facet_wrap to have a better look on each function.
+scores_df %>% ggplot(aes(x = Y_score_mg_ph10, group = X, colour = X)) + 
+  geom_histogram(aes(y = ..density.., fill = X), alpha = 0.1) +
+  geom_density(size = 1) + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right")+
+  labs(title = "score_mg_ph10", color = "nucleotide", fill = "nucleotide") +
+  scale_fill_discrete(labels = nucleotide_labels) +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r,fig.height=8, fig.width=10}
+# We use facet_wrap to have a better look on each function.
+scores_df %>% ggplot(aes(x = Y_score_mg_ph10,
+                         group = predicted_loop_type_vector,
+                         colour = predicted_loop_type_vector)) + 
+  geom_histogram(aes(y = ..density.., fill = predicted_loop_type_vector), alpha = 0.1) +
+  geom_density(size = 1) +
+  facet_wrap(~predicted_loop_type_vector, labeller = predicted_loop_type_labeller) + 
+  theme(legend.position ="right")+
+  labs(title = "score_mg_ph10", color = "predicted_loop_type", fill = "predicted_loop_type") +
+  scale_fill_discrete(labels = predicted_loop_type_labels) +
+  scale_color_discrete(labels = predicted_loop_type_labels)
+```
+
+### score_ph10
+
+```{r}
+# Density function without grouping.
+scores_df %>% ggplot(aes(Y_score_ph10)) +
+  geom_histogram(aes(y = ..density..), color = "black", fill = "orange", alpha = 0.1) +
+  geom_density(color = "darkorange", size = 1)
+```
+
+```{r}
+# We use facet_wrap to have a better look on each function.
+scores_df %>% ggplot(aes(x = Y_score_ph10, group = X, colour = X)) + 
+  geom_histogram(aes(y = ..density.., fill = X), alpha = 0.1) +
+  geom_density(size = 1) + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right")+
+  labs(title = "score_ph10", color = "nucleotide", fill = "nucleotide") +
+  scale_fill_discrete(labels = nucleotide_labels) +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r,fig.height=8, fig.width=10}
+# We use facet_wrap to have a better look on each function.
+scores_df %>% ggplot(aes(x = Y_score_ph10,
+                         group = predicted_loop_type_vector,
+                         colour = predicted_loop_type_vector)) + 
+  geom_histogram(aes(y = ..density.., fill = predicted_loop_type_vector), alpha = 0.1) +
+  geom_density(size = 1) +
+  facet_wrap(~predicted_loop_type_vector, labeller = predicted_loop_type_labeller) + 
+  theme(legend.position ="right")+
+  labs(title = "score_ph10", color = "predicted_loop_type", fill = "predicted_loop_type") +
+  scale_fill_discrete(labels = predicted_loop_type_labels) +
+  scale_color_discrete(labels = predicted_loop_type_labels)
+```
+
+### score_mg_50c
+
+```{r}
+scores_df %>% ggplot(aes(Y_score_mg_50c)) +
+  geom_histogram(aes(y = ..density..), color = "black", fill = "purple", alpha = 0.1) +
+  geom_density(color = "purple", size = 1)
+```
+
+```{r}
+# We use facet_wrap to have a better look on each function.
+scores_df %>% ggplot(aes(x = Y_score_mg_50c, group = X, colour = X)) + 
+  geom_histogram(aes(y = ..density.., fill = X), alpha = 0.1) +
+  geom_density(size = 1) + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right")+
+  labs(title = "score_mg_50c", color = "nucleotide", fill = "nucleotide") +
+  scale_fill_discrete(labels = nucleotide_labels) +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r,fig.height=8, fig.width=10}
+# We use facet_wrap to have a better look on each function.
+scores_df %>% ggplot(aes(x = Y_score_mg_50c,
+                         group = predicted_loop_type_vector,
+                         colour = predicted_loop_type_vector)) + 
+  geom_histogram(aes(y = ..density.., fill = predicted_loop_type_vector), alpha = 0.1) +
+  geom_density(size = 1) +
+  facet_wrap(~predicted_loop_type_vector, labeller = predicted_loop_type_labeller) + 
+  theme(legend.position ="right")+
+  labs(title = "score_mg_50c", color = "predicted_loop_type", fill = "predicted_loop_type") +
+  scale_fill_discrete(labels = predicted_loop_type_labels) +
+  scale_color_discrete(labels = predicted_loop_type_labels)
+```
+
+
+### score_50c
+
+```{r}
+scores_df %>% ggplot(aes(Y_score_50c)) +
+  geom_histogram(aes(y = ..density..), color = "black", fill = "brown", alpha = 0.1) +
+  geom_density(color = "brown", size = 1)
+```
+
+```{r}
+# We use facet_wrap to have a better look on each function.
+scores_df %>% ggplot(aes(x = Y_score_50c, group = X, colour = X)) + 
+  geom_histogram(aes(y = ..density.., fill = X), alpha = 0.1) +
+  geom_density(size = 1) + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right")+
+  labs(title = "score_50c", color = "nucleotide", fill = "nucleotide") +
+  scale_fill_discrete(labels = nucleotide_labels) +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r,fig.height=8, fig.width=10}
+# We use facet_wrap to have a better look on each function.
+scores_df %>% ggplot(aes(x = Y_score_50c,
+                         group = predicted_loop_type_vector,
+                         colour = predicted_loop_type_vector)) + 
+  geom_histogram(aes(y = ..density.., fill = predicted_loop_type_vector), alpha = 0.1) +
+  geom_density(size = 1) +
+  facet_wrap(~predicted_loop_type_vector, labeller = predicted_loop_type_labeller) + 
+  theme(legend.position ="right")+
+  labs(title = "score_50c", color = "predicted_loop_type", fill = "predicted_loop_type") +
+  scale_fill_discrete(labels = predicted_loop_type_labels) +
+  scale_color_discrete(labels = predicted_loop_type_labels)
+```
+
+## Scatter plots
+
+### score_mg_50c depending on score_50c
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_50c, y = Y_score_mg_50c)) + 
+  geom_point() +
+  theme(legend.position ="right") +
+  labs(x = "score_50c", y = "score_mg_50c")
+```
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_50c, y = Y_score_mg_50c, group = X, color = X)) + 
+  geom_point() + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_50c", y = "score_mg_50c", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r, fig.height=8, fig.width=10}
+scores_df %>% ggplot(aes(x = Y_score_50c, y = Y_score_mg_50c,
+                         group = predicted_loop_type_vector,
+                         color = predicted_loop_type_vector)) + geom_point() +
+  facet_wrap(~predicted_loop_type_vector, labeller = predicted_loop_type_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_50c", y = "score_mg_50c", color="predicted_loop_type") +
+  scale_color_discrete(labels = predicted_loop_type_labels)
+```
+
+### score_mg_50c depending on score_mg_ph10
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_mg_ph10, y = Y_score_mg_50c)) + 
+  geom_point() +
+  theme(legend.position ="right") +
+  labs(x="score_mg_ph10", y = "score_mg_50c")
+```
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_mg_ph10, y = Y_score_mg_50c, group = X, color = X)) + 
+  geom_point() + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right") +
+  labs(x="score_mg_ph10", y = "score_mg_50c", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r, fig.height=8, fig.width=10}
+scores_df %>% ggplot(aes(x = Y_score_mg_ph10, y = Y_score_mg_50c,
+                         group = predicted_loop_type_vector,
+                         color = predicted_loop_type_vector)) + geom_point() +
+  facet_wrap(~predicted_loop_type_vector, labeller = predicted_loop_type_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_mg_ph10", y = "score_mg_50c", color="predicted_loop_type") +
+  scale_color_discrete(labels = predicted_loop_type_labels)
+```
+
+### score_mg_50c depending on score_ph10
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_ph10, y = Y_score_mg_50c)) + 
+  geom_point() +
+  theme(legend.position ="right") +
+  labs(x="score_ph10", y = "score_mg_50c")
+```
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_ph10, y = Y_score_mg_50c, group = X, color = X)) + 
+  geom_point() + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right") +
+  labs(x="score_ph10", y = "score_mg_50c", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r, fig.height=8, fig.width=10}
+scores_df %>% ggplot(aes(x = Y_score_ph10, y = Y_score_mg_50c,
+                         group = predicted_loop_type_vector,
+                         color = predicted_loop_type_vector)) + geom_point() +
+  facet_wrap(~predicted_loop_type_vector, labeller = predicted_loop_type_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_ph10", y = "score_mg_50c", color="predicted_loop_type") +
+  scale_color_discrete(labels = predicted_loop_type_labels)
+```
+
+### score_mg_ph10 depending on score_ph10
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_ph10, y = Y_score_mg_ph10)) + 
+  geom_point() +
+  theme(legend.position ="right") +
+  labs(x = "score_ph10", y = "score_mg_ph10")
+```
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_ph10, y = Y_score_mg_ph10, group = X, color = X)) + 
+  geom_point() + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_ph10", y = "score_mg_ph10", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r, fig.height=8, fig.width=10}
+scores_df %>% ggplot(aes(x = Y_score_ph10, y = Y_score_mg_ph10,
+                         group = predicted_loop_type_vector,
+                         color = predicted_loop_type_vector)) + geom_point() +
+  facet_wrap(~predicted_loop_type_vector, labeller = predicted_loop_type_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_ph10", y = "score_mg_ph10", color="predicted_loop_type") +
+  scale_color_discrete(labels = predicted_loop_type_labels)
+```
+
+### score_mg_ph10 depending on score_50c
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_50c, y = Y_score_mg_ph10)) + 
+  geom_point() +
+  theme(legend.position ="right") +
+  labs(x = "score_50c", y = "score_mg_ph10")
+```
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_50c, y = Y_score_mg_ph10, group = X, color = X)) + 
+  geom_point() + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_50c", y = "score_mg_ph10", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r, fig.height=8, fig.width=10}
+scores_df %>% ggplot(aes(x = Y_score_50c, y = Y_score_mg_ph10,
+                         group = predicted_loop_type_vector,
+                         color = predicted_loop_type_vector)) + geom_point() +
+  facet_wrap(~predicted_loop_type_vector, labeller = predicted_loop_type_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_50c", y = "score_mg_ph10", color="predicted_loop_type") +
+  scale_color_discrete(labels = predicted_loop_type_labels)
+```
+
+### score_50c depending on score_ph10
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_ph10, y = Y_score_50c)) + 
+  geom_point() +
+  theme(legend.position ="right") +
+  labs(x = "score_ph10", y = "score_50c")
+```
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_ph10, y = Y_score_50c, group = X, color = X)) + 
+  geom_point() + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_ph10", y = "score_50c", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r, fig.height=8, fig.width=10}
+scores_df %>% ggplot(aes(x = Y_score_ph10, y = Y_score_50c,
+                         group = predicted_loop_type_vector,
+                         color = predicted_loop_type_vector)) + geom_point() +
+  facet_wrap(~predicted_loop_type_vector, labeller = predicted_loop_type_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_ph10", y = "score_50c", color="predicted_loop_type") +
+  scale_color_discrete(labels = predicted_loop_type_labels)
+```
+
+### reactivity depending on score_mg_50c
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_mg_50c, y = Y_reactivity)) + 
+  geom_point() +
+  theme(legend.position ="right") +
+  labs(x = "score_mg_50c", y = "reactivity")
+```
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_mg_50c, y = Y_reactivity, group = X, color = X)) + 
+  geom_point() + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_mg_50c", y = "reactivity", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r, fig.height=8, fig.width=10}
+scores_df %>% ggplot(aes(x = Y_score_mg_50c, y = Y_reactivity,
+                         group = predicted_loop_type_vector,
+                         color = predicted_loop_type_vector)) + geom_point() +
+  facet_wrap(~predicted_loop_type_vector, labeller = predicted_loop_type_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_mg_50c", y = "reactivity", color="predicted_loop_type") +
+  scale_color_discrete(labels = predicted_loop_type_labels)
+```
+
+### reactivity depending on score_50c
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_50c, y = Y_reactivity)) + 
+  geom_point() +
+  theme(legend.position ="right") +
+  labs(x = "score_50c", y = "reactivity")
+```
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_50c, y = Y_reactivity, group = X, color = X)) + 
+  geom_point() + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_50c", y = "reactivity", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r, fig.height=8, fig.width=10}
+scores_df %>% ggplot(aes(x = Y_score_50c, y = Y_reactivity,
+                         group = predicted_loop_type_vector,
+                         color = predicted_loop_type_vector)) + geom_point() +
+  facet_wrap(~predicted_loop_type_vector, labeller = predicted_loop_type_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_50c", y = "reactivity", color="predicted_loop_type") +
+  scale_color_discrete(labels = predicted_loop_type_labels)
+```
+
+### reactivity depending on score_mg_ph10
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_mg_ph10, y = Y_reactivity)) + 
+  geom_point() +
+  theme(legend.position ="right") +
+  labs(x = "score_mg_ph10", y = "reactivity")
+```
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_mg_ph10, y = Y_reactivity, group = X, color = X)) + 
+  geom_point() + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_mg_ph10", y = "reactivity", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r, fig.height=8, fig.width=10}
+scores_df %>% ggplot(aes(x = Y_score_mg_ph10, y = Y_reactivity,
+                         group = predicted_loop_type_vector,
+                         color = predicted_loop_type_vector)) + geom_point() +
+  facet_wrap(~predicted_loop_type_vector, labeller = predicted_loop_type_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_mg_ph10", y = "reactivity", color="predicted_loop_type") +
+  scale_color_discrete(labels = predicted_loop_type_labels)
+```
+
+### reactivity depending on score_ph10
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_ph10, y = Y_reactivity)) + 
+  geom_point() +
+  theme(legend.position ="right") +
+  labs(x = "score_ph10", y = "reactivity")
+```
+
+```{r}
+scores_df %>% ggplot(aes(x = Y_score_ph10, y = Y_reactivity, group = X, color = X)) + 
+  geom_point() + facet_wrap(~X, labeller = nucleotide_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_ph10", y = "reactivity", color="nucleotide") +
+  scale_color_discrete(labels = nucleotide_labels)
+```
+
+```{r, fig.height=8, fig.width=10}
+scores_df %>% ggplot(aes(x = Y_score_ph10, y = Y_reactivity,
+                         group = predicted_loop_type_vector,
+                         color = predicted_loop_type_vector)) + geom_point() +
+  facet_wrap(~predicted_loop_type_vector, labeller = predicted_loop_type_labeller) + 
+  theme(legend.position ="right") +
+  labs(x = "score_ph10", y = "reactivity", color="predicted_loop_type") +
+  scale_color_discrete(labels = predicted_loop_type_labels)
+```
+
+## Visualisation du lien entre les labels
+
+```{r}
+cor_label = cor(cbind(Y_reactivity, Y_score_mg_ph10, Y_score_ph10, Y_score_mg_50c, Y_score_50c))
+```
+
+On constate que quasiment tous les labels sont assez fortement corrélés, et dans le même sens.
+Cela indique qu'une augmentation d'une dégradation est certainement en lien avec l'augmentation des autres. Cela rejoint ce que l'on voyait graphiquement.
+```{r}
+corrplot(cor_label, type="upper", order="hclust", tl.col="black", tl.srt=45)
+```
+
+```{r}
+symnum(cor_label, abbr.colnames=FALSE)
+```
+
+Les p_values étant toutes extrêment faibles (même ici égales à 0), on réfute l'hypothèse H0 du test de corrélation (non-correlation des variables).
+Donc, de par ce test, on peut affirmer que les labels sont corrélés.
+Cela est cohérent avec les graphes précédents.
+```{r}
+rcorr(cbind(Y_reactivity,Y_score_mg_ph10,Y_score_ph10,Y_score_mg_50c,Y_score_50c))
+```
