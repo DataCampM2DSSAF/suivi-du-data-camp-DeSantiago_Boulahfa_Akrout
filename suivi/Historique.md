@@ -13,6 +13,9 @@ Semaine 2. 29 Janvier au 05 Février :
 - Élaboration de pistes à explorer.
 - Transformation du jeu de données pour les statistiques descriptives.
 test.
+**Vendredi 29 Janvier** :
+
+Leyth -> Netoyage des données, creation d'une première base de données sur les données train exploitable en Python et R ( data frame ).
 
 **Samedi 06 Février** :
 
@@ -20,17 +23,25 @@ Kylliann -> Travail sur les statistiques descriptives sur les variables, créati
 
 Jawad -> Travail sur la réorganisation et la visualisation des données (pie plots, density plots, ...), recherche d'informations sur le jeu de données (forum Kaggle, article: https://daslab.stanford.edu/site_data/pub_pdf/2014_Seetin_MIMB.pdf).
 
+Leyth -> Statistiques descriptives sur les différentes variables, histogrames densité des scores et des scores par groupes, test d'adéquation des scores selon les différents groupes ( nucléotides et structures ). Création de premier modèles GLM ( gaussien, gamma et inverse gaussienne ) simples.
+
 **Dimanche 07 Février** :
 
 Kylliann -> poursuite du travail sur les modèles basiques, recodage de la base de données, MSE sur les modèles basiques pour le label 'reactivity'
 
 Jawad -> Visualisation des données: ajout de scatter plots et d'histogrammes, recherche d'informations sur le jeu de données (https://www.kaggle.com/c/stanford-covid-vaccine/discussion/182320)
 
+Leyth -> Creation de nouvelles variables pour améliorer les modèles ( trop significatif avec de mauvais scores ). Modèles GLM avec ces nouvelles variables, intéractions et aic.   
+
 **Lundi 08 Février** :
 
 Kylliann -> Ajout de la correlation entre les labels. Travail sur les modèles simple. Première soumission avec un modèle simple. Le score obtenu est 1.96760
 
 ![](Historique.png)
+
+**Mardi 09 Février** :
+
+Leyth -> Création d'une fonction permettant de filtrer les données brutes dans l'espoir de pouvoir utiliser le bruit des données pour améliorer non modèles.
 
 **Jeudi 11 Février** :
 
@@ -43,3 +54,5 @@ Jawad -> Ajout d'un pie plot pour les predicted_loop_type.
 **Vendredi 12 Février** :
 
 Jawad -> Visualisation pour la variable predicted_loop_type (boxplots, histogrammes, densités, scatter plots), ajout de commentaires dans le fichier de visualisation.
+
+Leyth -> Mise au propre des programmes pour les mettre sur GitHub.
