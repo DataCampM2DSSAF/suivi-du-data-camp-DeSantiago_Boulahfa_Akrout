@@ -39,3 +39,7 @@ La première est la correction de la 1ère soumission, avec un score public de 0
 La deuxième soumission avec un modèle légèrement plus complexe a obtenu un score public de 0.42532 et un score privé de 0.49538.
 
 Jawad -> Ajout d'un pie plot pour les predicted_loop_type.
+
+**Vendredi 12 Février** :
+
+Jawad -> Visualisation pour la variable predicted_loop_type (boxplots, histogrammes, densités, scatter plots), ajout de commentaires dans le fichier de visualisation.
