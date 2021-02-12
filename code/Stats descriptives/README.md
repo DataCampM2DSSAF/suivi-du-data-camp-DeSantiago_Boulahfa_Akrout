@@ -1122,10 +1122,6 @@ scores_df %>% ggplot(aes(x = Y_score_ph10, y = Y_reactivity,
 
 ![](README_files/figure-gfm/unnamed-chunk-75-1.png)<!-- -->
 
-# Tests
-
-## Visualisation du lien entre structure\_boucle et les labels
-
 ## Visualisation du lien entre les labels
 
 ``` r
