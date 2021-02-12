@@ -13,6 +13,7 @@ Semaine 2. 29 Janvier au 05 Février :
 - Élaboration de pistes à explorer.
 - Transformation du jeu de données pour les statistiques descriptives.
 test.
+
 **Vendredi 29 Janvier** :
 
 Leyth -> Netoyage des données, creation d'une première base de données sur les données train exploitable en Python et R ( data frame ).
