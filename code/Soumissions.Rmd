@@ -1,0 +1,335 @@
+---
+title: "R Notebook"
+---
+
+
+## Chargement des librairies et des données.
+```{r}
+library(ggplot2)
+library(tidyverse)
+source("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/projet_fct.R")
+library(randomForest)
+```
+
+```{r}
+data = read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_train.csv")
+data=data[,-1]
+```
+
+```{r}
+data=data %>% mutate(sequence = as.factor(sequence)) %>% 
+  #mutate(index_sequence = as.factor(index_sequence)) %>% 
+  mutate(seq_be = as.factor(seq_be)) %>% 
+  mutate(seq_af = as.factor(seq_af)) %>% 
+  mutate(sequence = as.factor(sequence)) %>% 
+  mutate(structure = as.factor(structure)) %>% 
+  mutate(predicted_loop_type = as.factor(predicted_loop_type))
+```
+
+
+On filtre maintenant les données qui ont SN_filter=0 :
+
+```{r}
+print(sum(is.na(data)))
+print(sum(data$SN_filter==0)/68) ## Nombre d'individus dont le SN_filter=0
+data=data[data$SN_filter==1,]
+rownames(data)=NULL#1:108052
+```
+
+Mise à 0 des valeurs négatives
+```{r}
+p=dim(data)[2]
+sum(data[,(p-4):p]<0)
+for (i in (p-4):p){
+  data[which(data[,i]<0),i]=0
+} 
+sum(data[,(p-4):p]<0)
+```
+
+
+## Première vrai soumission :
+
+```{r}
+data_test=read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_test.csv")
+data_test= data_test%>% mutate(sequence = as.factor(sequence)) %>% 
+  mutate(index_sequence = as.factor(index_sequence)) %>% 
+  mutate(seq_be = as.factor(seq_be)) %>% 
+  mutate(seq_af = as.factor(seq_af)) %>% 
+  mutate(structure = as.factor(structure)) %>% 
+  mutate(predicted_loop_type = as.factor(predicted_loop_type))
+head(data_test)
+```
+
+```{r}
+model_reactivity=glm(reactivity+1e-12~sequence,family = Gamma,data = data)
+model_deg_Mg_pH10=glm(deg_Mg_pH10+1e-12~sequence,family = Gamma,data = data)
+model_deg_pH10=glm(deg_pH10+1e-12~sequence,family = Gamma,data = data)
+model_deg_Mg_50C=glm(deg_Mg_50C+1e-12~sequence,family = Gamma,data = data)
+model_deg_50C=glm(deg_50C+1e-12~sequence,family = Gamma,data = data)
+```
+
+```{r}
+y_test_pred=read.csv(file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
+y_test_pred[,2]=predict.glm(model_reactivity,data_test,type = "response")
+y_test_pred[,3]=predict.glm(model_deg_Mg_pH10,data_test,type = "response")
+y_test_pred[,4]=predict.glm(model_deg_pH10,data_test,type = "response")
+y_test_pred[,5]=predict.glm(model_deg_Mg_50C,data_test,type = "response")
+y_test_pred[,6]=predict.glm(model_deg_50C,data_test,type = "response")
+```
+
+```{r}
+head(y_test_pred)
+```
+
+```{r}
+#write.csv(y_test_pred,file = "sample_submission.csv",row.names=FALSE)
+#tamp=read.csv(file = "sample_submission_2.csv")
+#head(tamp)
+```
+
+
+
+## Deuxième soumission :
+
+```{r}
+data_test=read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_test.csv")
+data_test= data_test%>% mutate(sequence = as.factor(sequence)) %>% 
+  #mutate(index_sequence = as.factor(index_sequence)) %>% 
+  mutate(seq_be = as.factor(seq_be)) %>% 
+  mutate(seq_af = as.factor(seq_af)) %>% 
+  mutate(structure = as.factor(structure)) %>% 
+  mutate(predicted_loop_type = as.factor(predicted_loop_type))
+head(data_test)
+```
+
+```{r}
+model_reactivity=glm(reactivity+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data)
+model_deg_Mg_pH10=glm(deg_Mg_pH10+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data)
+model_deg_pH10=glm(deg_pH10+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data)
+model_deg_Mg_50C=glm(deg_Mg_50C+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data)
+model_deg_50C=glm(deg_50C+1e-12 ~ sequence+predicted_loop_type+index_sequence,family = Gamma,data = data)
+```
+
+```{r}
+y_test_pred=read.csv(file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
+y_test_pred[,2]=predict.glm(model_reactivity,data_test,type = "response")-1e-12
+y_test_pred[,3]=predict.glm(model_deg_Mg_pH10,data_test,type = "response")-1e-12
+y_test_pred[,4]=predict.glm(model_deg_pH10,data_test,type = "response")-1e-12
+y_test_pred[,5]=predict.glm(model_deg_Mg_50C,data_test,type = "response")-1e-12
+y_test_pred[,6]=predict.glm(model_deg_50C,data_test,type = "response")-1e-12
+```
+
+```{r}
+head(y_test_pred)
+```
+
+```{r}
+#write.csv(y_test_pred,file = "sample_submission.csv",row.names=FALSE)
+#tamp=read.csv(file = "sample_submission_2.csv")
+#head(tamp)
+```
+
+
+Private score : 0.49538
+Public score : 0.42532
+
+
+## Troisième soumission :
+
+```{r}
+data_test=read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_test.csv")
+data_test= data_test%>% mutate(sequence = as.factor(sequence)) %>% 
+  #mutate(index_sequence = as.factor(index_sequence)) %>% 
+  mutate(seq_be = as.factor(seq_be)) %>% 
+  mutate(seq_af = as.factor(seq_af)) %>% 
+  mutate(structure = as.factor(structure)) %>% 
+  mutate(predicted_loop_type = as.factor(predicted_loop_type))
+head(data_test)
+```
+
+```{r}
+model_reactivity=glm(reactivity+1e-12~(sequence+predicted_loop_type+index_sequence+seq_af+seq_be)^2,family = Gamma,data = data)
+model_deg_Mg_pH10=glm(deg_Mg_pH10+1e-12~(sequence+predicted_loop_type+index_sequence+seq_be)^2,family = Gamma,data = data)
+model_deg_pH10=glm(deg_pH10+1e-12~(sequence+predicted_loop_type+index_sequence+seq_be)^2,family = Gamma,data = data)
+model_deg_Mg_50C=glm(deg_Mg_50C+1e-12~(sequence+predicted_loop_type+index_sequence+seq_af+seq_be)^2,family = Gamma,data = data)
+model_deg_50C=glm(deg_50C+1e-12 ~ (sequence+predicted_loop_type+index_sequence+seq_af+seq_be)^2,family = Gamma,data = data)
+```
+
+```{r}
+y_test_pred=read.csv(file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
+y_test_pred[,2]=predict.glm(model_reactivity,data_test,type = "response")-1e-12
+y_test_pred[,3]=predict.glm(model_deg_Mg_pH10,data_test,type = "response")-1e-12
+y_test_pred[,4]=predict.glm(model_deg_pH10,data_test,type = "response")-1e-12
+y_test_pred[,5]=predict.glm(model_deg_Mg_50C,data_test,type = "response")-1e-12
+y_test_pred[,6]=predict.glm(model_deg_50C,data_test,type = "response")-1e-12
+```
+
+```{r}
+head(y_test_pred)
+```
+
+```{r}
+#write.csv(y_test_pred,file = "sample_submission.csv",row.names=FALSE)
+#tamp=read.csv(file = "sample_submission_2.csv")
+#head(tamp)
+```
+
+Private score : 0.48389
+Public score : 0.40055
+
+
+## Quatrième soumission [juste pour voir les résultats, attention matrice pas de plein rang, donc pas à utiliser !!!!]
+
+```{r}
+data_test=read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_test.csv")
+data_test= data_test%>% mutate(sequence = as.factor(sequence)) %>% 
+  #mutate(index_sequence = as.factor(index_sequence)) %>% 
+  mutate(seq_be = as.factor(seq_be)) %>% 
+  mutate(seq_af = as.factor(seq_af)) %>% 
+  mutate(structure = as.factor(structure)) %>% 
+  mutate(predicted_loop_type = as.factor(predicted_loop_type))
+head(data_test)
+```
+
+```{r}
+model_reactivity=glm(reactivity+1e-12~(predicted_loop_type+index_sequence+sequence+seq_af+seq_be)^2,family = Gamma,data = data)
+model_deg_Mg_pH10=glm(deg_Mg_pH10+1e-12~(sequence+predicted_loop_type+index_sequence+seq_be)^2,family = Gamma,data = data)
+model_deg_pH10=glm(deg_pH10+1e-12~(sequence+predicted_loop_type+index_sequence+seq_be)^2,family = Gamma,data = data)
+model_deg_Mg_50C=glm(deg_Mg_50C+1e-12~(sequence+predicted_loop_type+index_sequence+seq_af+seq_be)^2,family = Gamma,data = data)
+model_deg_50C=glm(deg_50C+1e-12 ~ (sequence+predicted_loop_type+index_sequence+seq_af+seq_be)^2,family = Gamma,data = data)
+```
+
+```{r}
+y_test_pred=read.csv(file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
+y_test_pred[,2]=predict.glm(model_reactivity,data_test,type = "response")-1e-12
+y_test_pred[,3]=predict.glm(model_deg_Mg_pH10,data_test,type = "response")-1e-12
+y_test_pred[,4]=predict.glm(model_deg_pH10,data_test,type = "response")-1e-12
+y_test_pred[,5]=predict.glm(model_deg_Mg_50C,data_test,type = "response")-1e-12
+y_test_pred[,6]=predict.glm(model_deg_50C,data_test,type = "response")-1e-12
+```
+
+```{r}
+head(y_test_pred)
+```
+
+```{r}
+#write.csv(y_test_pred,file = "sample_submission.csv",row.names=FALSE)
+#tamp=read.csv(file = "sample_submission_2.csv")
+#head(tamp)
+```
+
+
+
+## Cinquième soumission : RandomForest
+
+
+```{r}
+model_reactivity=randomForest(reactivity+1e-12~sequence+predicted_loop_type+index_sequence+seq_be+seq_af+structure,data = data,method = "anova",ntree=100)
+model_deg_Mg_pH10=randomForest(deg_Mg_pH10+1e-12~sequence+predicted_loop_type+index_sequence+seq_be+seq_af+structure,data = data,method = "anova",ntree=100)
+model_deg_pH10=randomForest(deg_pH10+1e-12~sequence+predicted_loop_type+index_sequence+seq_be+seq_af+structure,data = data,method = "anova",ntree=100)
+model_deg_Mg_50C=randomForest(deg_Mg_50C+1e-12~sequence+predicted_loop_type+index_sequence+seq_be+seq_af+structure,data = data,method = "anova",ntree=100)
+model_deg_50C=randomForest(deg_50C+1e-12~sequence+predicted_loop_type+index_sequence+seq_be+seq_af+structure,data = data,method = "anova",ntree=100)
+```
+
+```{r}
+y_test_pred=read.csv(file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
+y_test_pred[,2]=predict(model_reactivity,data_test)-1e-12
+y_test_pred[,3]=predict(model_deg_Mg_pH10,data_test)-1e-12
+y_test_pred[,4]=predict(model_deg_pH10,data_test)-1e-12
+y_test_pred[,5]=predict(model_deg_Mg_50C,data_test)-1e-12
+y_test_pred[,6]=predict(model_deg_50C,data_test)-1e-12
+```
+
+```{r}
+head(y_test_pred)
+```
+
+```{r}
+write.csv(y_test_pred,file = "sample_submission.csv",row.names=FALSE)
+#tamp=read.csv(file = "sample_submission_2.csv")
+#head(tamp)
+```
+
+
+Private score : 0.45519
+Public score : 0.35488
+
+
+## Sixième soumission : RandomForest 
+
+Plus de variables et sans mise à 0 des labels
+
+```{r}
+data = read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_train.csv")
+data=data[,-1]
+
+data=data %>% mutate(sequence = as.factor(sequence)) %>% 
+  #mutate(index_sequence = as.factor(index_sequence)) %>% 
+  mutate(seq_be = as.factor(seq_be)) %>% 
+  mutate(seq_af = as.factor(seq_af)) %>% 
+  mutate(sequence = as.factor(sequence)) %>% 
+  mutate(structure = as.factor(structure)) %>%
+  mutate(struct_be = as.factor(struct_be)) %>% 
+  mutate(struct_af = as.factor(struct_af)) %>% 
+  mutate(predicted_loop_type = as.factor(predicted_loop_type)) %>% 
+  mutate(loop_type_be = as.factor(loop_type_be)) %>% 
+  mutate(loop_type_af = as.factor(loop_type_af)) 
+
+data=data[data$SN_filter==1,]
+rownames(data)=NULL#1:108052
+```
+
+```{r}
+head(data)
+```
+
+
+```{r}
+model_reactivity=randomForest(reactivity~sequence+predicted_loop_type+index_sequence+seq_be+seq_af+structure+struct_be+struct_af+loop_type_be+loop_type_af,data = data,method = "anova",ntree=100)
+model_deg_Mg_pH10=randomForest(deg_Mg_pH10~sequence+predicted_loop_type+index_sequence+seq_be+seq_af+structure+struct_be+struct_af+loop_type_be+loop_type_af,data = data,method = "anova",ntree=100)
+model_deg_pH10=randomForest(deg_pH10~sequence+predicted_loop_type+index_sequence+seq_be+seq_af+structure+struct_be+struct_af+loop_type_be+loop_type_af,data = data,method = "anova",ntree=100)
+model_deg_Mg_50C=randomForest(deg_Mg_50C~sequence+predicted_loop_type+index_sequence+seq_be+seq_af+structure+struct_be+struct_af+loop_type_be+loop_type_af,data = data,method = "anova",ntree=100)
+model_deg_50C=randomForest(deg_50C~sequence+predicted_loop_type+index_sequence+seq_be+seq_af+structure+struct_be+struct_af+loop_type_be+loop_type_af,data = data,method = "anova",ntree=100)
+```
+
+```{r}
+y_test_pred=read.csv(file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
+head(y_test_pred)
+```
+
+```{r}
+data_test=read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_test.csv")
+data_test= data_test%>% mutate(sequence = as.factor(sequence)) %>% 
+  #mutate(index_sequence = as.factor(index_sequence)) %>% 
+  mutate(seq_be = as.factor(seq_be)) %>% 
+  mutate(seq_af = as.factor(seq_af)) %>% 
+  mutate(structure = as.factor(structure)) %>%
+  mutate(struct_be = as.factor(struct_be)) %>% 
+  mutate(struct_af = as.factor(struct_af)) %>% 
+  mutate(predicted_loop_type = as.factor(predicted_loop_type)) %>% 
+  mutate(loop_type_be = as.factor(loop_type_be)) %>% 
+  mutate(loop_type_af = as.factor(loop_type_af)) 
+head(data_test)
+```
+
+```{r}
+y_test_pred[,2]=predict(model_reactivity,data_test)
+y_test_pred[,3]=predict(model_deg_Mg_pH10,data_test)
+y_test_pred[,4]=predict(model_deg_pH10,data_test)
+y_test_pred[,5]=predict(model_deg_Mg_50C,data_test)
+y_test_pred[,6]=predict(model_deg_50C,data_test)
+```
+
+```{r}
+head(y_test_pred)
+```
+
+```{r}
+write.csv(y_test_pred,file = "sample_submission.csv",row.names=FALSE)
+#tamp=read.csv(file = "sample_submission_2.csv")
+#head(tamp)
+```
+
+
+Private score : 0.44840
+Public score : 0.35103
