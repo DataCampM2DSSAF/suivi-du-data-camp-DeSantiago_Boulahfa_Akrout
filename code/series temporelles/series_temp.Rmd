@@ -31,14 +31,7 @@ data=data %>% mutate(sequence = as.factor(sequence)) %>%
   mutate(predicted_loop_type = as.factor(predicted_loop_type)) %>% 
   mutate(loop_type_be = as.factor(loop_type_be)) %>% 
   mutate(loop_type_af = as.factor(loop_type_af)) 
-```
 
-
-On filtre maintenant les données qui ont SN_filter=0 :
-
-```{r}
-print(sum(is.na(data)))
-print(sum(data$SN_filter==0)/68) ## Nombre d'individus dont le SN_filter=0
 data=data[data$SN_filter==1,]
 rownames(data)=NULL#1:108052
 ```
@@ -48,35 +41,4 @@ tamp=train_test_split(data)
 data_train=tamp$train
 data_val=tamp$val
 ```
-
-
-## Regression Tree
-
-```{r}
-model_tree=rpart(reactivity+1e-12~sequence+predicted_loop_type+index_sequence+seq_be+seq_af+structure,data = data_train,method = "anova",control = rpart.control(cp=0.00001))
-#rpart.plot(model_tree)
-```
-
-```{r}
-y_pred=predict(model_tree,data_train)
-mean((y_pred-data_train$reactivity)^2)
-
-y_pred=predict(model_tree,data_val)
-mean((y_pred-data_val$reactivity)^2)
-```
-
-## Random Forest
-
-```{r}
-model_tree=randomForest(reactivity+1e-12~sequence+predicted_loop_type+index_sequence+seq_be+seq_af+structure,data = data_train,method = "anova",ntree=100)
-```
-
-```{r}
-y_pred=predict(model_tree,data_train)
-mean((y_pred-data_train$reactivity)^2)
-
-y_pred=predict(model_tree,data_val)
-mean((y_pred-data_val$reactivity)^2)
-```
-## KNN
 
