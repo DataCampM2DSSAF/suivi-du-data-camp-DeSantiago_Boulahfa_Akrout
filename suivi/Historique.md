@@ -57,3 +57,8 @@ Jawad -> Ajout d'un pie plot pour les predicted_loop_type.
 Jawad -> Visualisation pour la variable predicted_loop_type (boxplots, histogrammes, densités, scatter plots), ajout de commentaires dans le fichier de visualisation.
 
 Leyth -> Mise au propre des programmes pour les mettre sur GitHub.
+
+**Samedi 20 Février** :
+
+Jawad -> Essais de quelques modèles GLM basiques, début d'optimisation d'un modèle sur le label reactivity (stepAIC: ne change rien aux résultats, pénalisation ridge et lasso).
+
