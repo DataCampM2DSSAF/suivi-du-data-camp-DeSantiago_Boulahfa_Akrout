@@ -60,5 +60,11 @@ Leyth -> Mise au propre des programmes pour les mettre sur GitHub.
 
 **Samedi 20 Février** :
 
-Jawad -> Essais de quelques modèles GLM basiques, début d'optimisation d'un modèle sur le label reactivity (stepAIC: ne change rien aux résultats, pénalisation ridge et lasso).
+Jawad -> Essais de quelques modèles GLM basiques, début d'optimisation d'un modèle GLM sur le label reactivity (stepAIC: ne change rien aux résultats, pénalisation ridge et lasso).
+
+**Dimanche 21 Février** :
+
+Jawad -> Fin d'optimisation d'un modèle GLM sur le label reactivity (pénalisation ridge, lasso et elastic-net: n'apportent aucune amélioration).
+Ecriture d'une fonction pour choisir alpha de façon optimale (dans une liste donnée) dans la pénalisation elastic-net.
+Optimisation d'un modèle GLM sur le label deg_Mg_pH10 (stepAIC: pas d'amélioration, pénalisation ridge et lasso: pas d'amélioration, pénalisation elastic-net: légère amélioration).
 
