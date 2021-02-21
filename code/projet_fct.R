@@ -28,7 +28,7 @@ extraction_vect=function(df,clef){
 
 ############ Modèles simples ############ 
 
-
+## Séparation train/test
 train_test_split=function(data,proportion=0.8){
   N=dim(data)[1]
   idx=sample.int(N/68)
@@ -42,4 +42,45 @@ train_test_split=function(data,proportion=0.8){
   val=data[-res,]
   return(list("train"=train,"val"=val))
   
+}
+
+## Elastic-net choix du alpha
+alpha_opti_enet <- function(data_train, data_val,
+                            y_true_train, y_true_val,
+                            family = Gamma,
+                            liste_alpha = seq(0, 1, 0.05),
+                            cores = detectCores() - 1)
+{
+  registerDoParallel(cores = cores)
+  
+  # Initialisation
+  errors_recherche_alpha = NaN
+  
+  # Prédictions et calculs d'erreurs
+  for(alpha in liste_alpha)
+  {
+    print(alpha)
+    model_pen_Elast = cv.glmnet(data_train, y_true_train,
+                                family = family, type.measure = "mse",
+                                standardize = FALSE, alpha = alpha,
+                                parallel = TRUE)
+    
+    y_pred_train = predict(model_pen_Elast,data_train,type="response",s="lambda.min")
+    y_pred_val = predict(model_pen_Elast,data_val,type="response",s="lambda.min")
+    
+    MSE_train = mean((y_pred_train-y_true_train)^2,na.rm=TRUE)
+    MSE_val = mean((y_pred_val-y_true_val)^2,na.rm=TRUE)
+    
+    errors_recherche_alpha = rbind(errors_recherche_alpha, c(alpha, MSE_train, MSE_val))
+  }
+  
+  colnames(errors_recherche_alpha) = c("alpha", "MSE_train", "MSE_val")
+  errors_recherche_alpha = unnest(data.frame(errors_recherche_alpha[-1,]),
+                                  cols = c(alpha, MSE_train, MSE_val))
+  
+  # alpha optimal = celui qui minimise le MSE sur la validation
+  indice_alpha_opti = as.double(apply(errors_recherche_alpha[, 3], 2, which.min))
+  alpha_opti = errors_recherche_alpha$alpha[indice_alpha_opti]
+  
+  return(alpha_opti)
 }
