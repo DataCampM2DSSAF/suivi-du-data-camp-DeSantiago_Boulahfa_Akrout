@@ -71,4 +71,8 @@ Optimisation d'un modèle GLM sur le label deg_Mg_pH10 (stepAIC: pas d'améliora
 **Lundi 22 Février** :
 
 Jawad -> Optimisation de modèles GLM sur les labels deg_pH10, deg_Mg_50C et deg_50C (stepAIC, pénalisation ridge, lasso et elastic-net).
+Récapitulatif:
+- deg_pH10 : pas d'amélioration
+- deg_Mg_50C: légère amélioration via l'elastic-net
+- deg_50C: pas d'amélioration
 
