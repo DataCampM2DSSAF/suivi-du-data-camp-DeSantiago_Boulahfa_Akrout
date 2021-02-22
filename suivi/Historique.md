@@ -68,3 +68,7 @@ Jawad -> Fin d'optimisation d'un modèle GLM sur le label reactivity (pénalisat
 Ecriture d'une fonction pour choisir alpha de façon optimale (dans une liste donnée) dans la pénalisation elastic-net.
 Optimisation d'un modèle GLM sur le label deg_Mg_pH10 (stepAIC: pas d'amélioration, pénalisation ridge et lasso: pas d'amélioration, pénalisation elastic-net: légère amélioration).
 
+**Lundi 22 Février** :
+
+Jawad -> Optimisation de modèles GLM sur les labels deg_pH10, deg_Mg_50C et deg_50C (stepAIC, pénalisation ridge, lasso et elastic-net).
+
