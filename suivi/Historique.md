@@ -76,3 +76,7 @@ Récapitulatif:
 - deg_Mg_50C: légère amélioration via l'elastic-net
 - deg_50C: pas d'amélioration
 
+**Lundi 1 Mars**:
+
+Jawad -> Essais d'optimisation de modèles GLM utilisant les BPPS.
+Problème rencontré: la famille "inverse.gaussian" ne fonctionne pas toujours, même en utilisant uniquement les 68 premiers BPPS.
