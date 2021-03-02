@@ -76,6 +76,10 @@ Récapitulatif:
 - deg_Mg_50C: légère amélioration via l'elastic-net
 - deg_50C: pas d'amélioration
 
+**Vendredi 26 Février** :
+
+Kylliann -> Création d'un nouveau jeu de données train et test, exploitant les valeurs des matrices contenue dans le dossier bpps
+
 **Lundi 1 Mars**:
 
 Jawad -> Essais d'optimisation de modèles GLM utilisant les BPPS.
@@ -85,3 +89,5 @@ Jawad -> Essais d'optimisation de modèles GLM utilisant les BPPS.
 Jawad -> Fin du travail d'optimisation de modèles GLM utilisant les BPPS: les modèles sans pénalisation ne sont pas de plein rang donc inutilisables en l'état.
 Cependant, ce problème se résout après pénalisation.
 Parmi la pénalisation ridge, lasso, et elastic-net, c'est la pénalisation lasso qui est toujours la meilleure.
+
+Kylliann -> Construction des modèles de Deep Learning. Souci au niveau de la lecture des données dans le modèle MLP. La suite du travail se focalisera sur la création d'une structure pour les données permettant l'utilisation du DeepL, ainsi que la création d'un modèle type MLP et un modèle type CNN qui pourront ensuite être combinés à un modèle type RNN.
