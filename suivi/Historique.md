@@ -83,4 +83,5 @@ Jawad -> Essais d'optimisation de modèles GLM utilisant les BPPS.
 **Mardi 2 Mars**:
 
 Jawad -> Fin du travail d'optimisation de modèles GLM utilisant les BPPS: les modèles sans pénalisation ne sont pas de plein rangs donc inutilisables en l'état.
-Cependant, ce problème se résout après pénalisation. Parmi la pénalisation ridge, lasso, et elastic-net, c'est la pénalisation lasso qui est toujours la meilleure.
+Cependant, ce problème se résout après pénalisation.
+Parmi la pénalisation ridge, lasso, et elastic-net, c'est la pénalisation lasso qui est toujours la meilleure.
