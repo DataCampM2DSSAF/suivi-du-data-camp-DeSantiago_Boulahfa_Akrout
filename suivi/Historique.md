@@ -91,3 +91,7 @@ Cependant, ce problème se résout après pénalisation.
 Parmi la pénalisation ridge, lasso, et elastic-net, c'est la pénalisation lasso qui est toujours la meilleure.
 
 Kylliann -> Construction des modèles de Deep Learning. Souci au niveau de la lecture des données dans le modèle MLP. La suite du travail se focalisera sur la création d'une structure pour les données permettant l'utilisation du DeepL, ainsi que la création d'un modèle type MLP et un modèle type CNN qui pourront ensuite être combinés à un modèle type RNN.
+
+**Mardi 2 Mars**:
+
+Kylliann -> Avance sur le modèle MLP, le modèle tourne avec les variables quantitatives mais toujours un souci sur les variables qualitatives.
