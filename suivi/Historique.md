@@ -100,3 +100,5 @@ Kylliann -> Avance sur le modèle MLP, le modèle tourne avec les variables quan
 
 Kylliann -> modèle MLP : ajout du One-Hot-Encoding pour les variables qualitatives. Certaines variables ont dû être retirées pour la compatibilité avec la base de donnée test. Le souci étant la longueur des données test qui sont plus grande que celle du train, obligeant ainsi à adapter nos méthodes à ce problème.
 Ce souci est autant vrai pour les variables qualitatives (ex : place du nucléotide dans l'ARN) que pour les modèles utilisés. On ne peut pas utiliser directement un CNN sur les matrices bpps par souci de différence de dimension entre le jeu train et le jeu test.
+
+Jawad -> Premiers modèles Random Forest pour chacun des labels. On utilise les modèles GLM avec pénalisation lasso précédemment obtenus pour sélectionner les BPPS à inclure.
