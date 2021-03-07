@@ -92,6 +92,11 @@ Parmi la pénalisation ridge, lasso, et elastic-net, c'est la pénalisation lass
 
 Kylliann -> Construction des modèles de Deep Learning. Souci au niveau de la lecture des données dans le modèle MLP. La suite du travail se focalisera sur la création d'une structure pour les données permettant l'utilisation du DeepL, ainsi que la création d'un modèle type MLP et un modèle type CNN qui pourront ensuite être combinés à un modèle type RNN.
 
-**Mardi 2 Mars**:
+**Samedi 6 Mars**:
 
 Kylliann -> Avance sur le modèle MLP, le modèle tourne avec les variables quantitatives mais toujours un souci sur les variables qualitatives.
+
+**Dimanche 7 Mars**:
+
+Kylliann -> modèle MLP : ajout du One-Hot-Encoding pour les variables qualitatives. Certaines variables ont dû être retirées pour la compatibilité avec la base de donnée test. Le souci étant la longueur des données test qui sont plus grande que celle du train, obligeant ainsi à adapter nos méthodes à ce problème.
+Ce souci est autant vrai pour les variables qualitatives (ex : place du nucléotide dans l'ARN) que pour les modèles utilisés. On ne peut pas utiliser directement un CNN sur les matrices bpps par souci de différence de dimension entre le jeu train et le jeu test.
