@@ -83,49 +83,13 @@ p = dim(data)[2]
 bruit = 1e-12
 ```
 
-Initialement, il existe des valeurs négatives pour nos labels.
-```{r}
-sum(data[,(p-4):p] <= 0) # nb total de lignes où il existe des labels qui ont des valeurs négatives
-```
-
-On peut aussi afficher le nombre de lignes où il y a des valeurs négatives pour chacun de nos labels. On peut remarquer que chaque label en possède.
+Initialement, il existe des valeurs négatives pour nos labels mais cela ne pose pas de problème pour construire des modèles Random Forest. On n'a donc pas besoin de translater les labels ici.
 ```{r}
 sum(data$reactivity <= 0)
 sum(data$deg_50C <= 0)
 sum(data$deg_Mg_50C <= 0)
 sum(data$deg_pH10 <= 0)
 sum(data$deg_Mg_pH10 <= 0)
-```
-
-On stocke une copie des labels dans un dataframe, afin de pouvoir les utiliser pour calculer les erreurs de prédiction de nos futurs modèles.
-```{r}
-original_data <- data[, (p-4):p]
-```
-
-On effectue une translation pour se placer sur $\mathbb{R}_+^*$.
-```{r}
-translation_labels <- c()
-for (i in (p-4):p)
-{
-  # On stocke les valeurs utilisées lors des translations de chaque label
-  # afin de pouvoir revenir à leurs valeurs initiales
-  translation_labels <- c(translation_labels, min(data[,i]) - bruit) 
-  # On soustrait à chaque label son minimum (qui est une valeur strictement négative)
-  # l'ajout du bruit permet ensuite d'éliminer les valeurs nulles.
-  data[,i] <- data[,i] - min(data[,i]) + bruit 
-}
-translation_labels <- data.frame(t(translation_labels))
-colnames(translation_labels) <- colnames(data)[(p-4):p]
-```
-
-On a bien retiré toutes les valeurs négatives.
-```{r}
-sum(data[,(p-4):p] <= 0) # Il n'y a plus aucune valeur négative
-```
-
-Il suffira d'ajouter pour chaque label sa valeur dans ce dataframe pour revenir à ses valeurs initiales.
-```{r}
-translation_labels
 ```
 
 # Création de la base train/validation
@@ -139,14 +103,6 @@ rownames(data_train) <- NULL
 
 data_val=tamp$val
 rownames(data_val) <- NULL
-
-# Valeurs initiales des labels pour le train
-original_data_train = original_data[index_train,]
-rownames(original_data_train) <- NULL
-
-# Valeurs initiales des labels pour la validation
-original_data_val = original_data[-index_train,]
-rownames(original_data_val) <- NULL
 ```
 
 ```{r}
@@ -159,7 +115,9 @@ dim(data_train)[1]+dim(data_val)[1]-dim(data)[1]
 #rm(tamp,data)
 ```
 
-# GLM : loi Gamma
+# Random Forest
+
+## Premiers essais
 
 Formule du modèle initial utilisé.
 ```{r}
@@ -185,17 +143,20 @@ for(i in 0:106)
 {
   names_coef <- c(names_coef, paste0("bpps_", i))
 }
-print(names_coef)
+#print(names_coef)
 ```
-
-ESSAIS
 
 ```{r}
 names_coef[43] # le premier bpps est à la 43ème position du vecteur
 ```
 
+```{r}
+models_RF <- c()
+errors_RF_train <- c()
+errors_RF_val <- c()
+```
 
-## Reactivity
+### Reactivity
 
 On charge le modèle lasso utilisé précédemment.
 ```{r}
@@ -213,9 +174,9 @@ rownames(lasso_reactivity_coef) <- names_coef
 zeros_reactivity <- which(apply(lasso_reactivity_coef, 2, function(x) x == 0))
 ```
 
-On va garder uniquement les features retenues par la modèle lasso vu précédemment pour construire notre modèle Random Forest.
+On va garder uniquement les bpps retenus par la modèle lasso vu précédemment pour construire notre modèle Random Forest.
 ```{r}
-formula_model_RF_reactivity = formula_model_RF
+formula_model_RF_reactivity <- formula_model_RF
 for(i in 0:106)
 {
   index_bbps_i <- i + 43
@@ -249,17 +210,296 @@ error_RF_val <- mean((y_pred_RF_val-data_val$reactivity)^2,na.rm=TRUE)
 print(error_RF_val)
 ```
 
+```{r}
+models_RF <- c(models_RF, "reactivity")
+errors_RF_train <- c(errors_RF_train, error_RF_train)
+errors_RF_val <- c(errors_RF_val, error_RF_val)
+```
 
 
+### deg_Mg_pH10
+
+On charge le modèle lasso utilisé précédemment.
+```{r}
+model_gamma_deg_Mg_pH10_pen_lasso <- readRDS("model_gamma_deg_Mg_pH10_pen_lasso.rds")
+```
+
+```{r}
+lasso_deg_Mg_pH10_coef <-
+  data.frame(matrix(coef(model_gamma_deg_Mg_pH10_pen_lasso, s = 'lambda.min')))
+colnames(lasso_deg_Mg_pH10_coef) <- "Coefficients"
+rownames(lasso_deg_Mg_pH10_coef) <- names_coef
+```
+
+```{r}
+zeros_deg_Mg_pH10 <- which(apply(lasso_deg_Mg_pH10_coef, 2, function(x) x == 0))
+```
+
+On va garder uniquement les bpps retenus par la modèle lasso vu précédemment pour construire notre modèle Random Forest.
+```{r}
+formula_model_RF_deg_Mg_pH10 <- formula_model_RF
+for(i in 0:106)
+{
+  index_bbps_i <- i + 43
+  if(!(index_bbps_i %in% zeros_deg_Mg_pH10)) # Si le bpps i n'a pas un coefficient nul dans le lasso
+  {
+    formula_model_RF_deg_Mg_pH10 <- paste0(formula_model_RF_deg_Mg_pH10, " + bpps_", i)
+  }
+}
+print(formula_model_RF_deg_Mg_pH10)
+```
+
+```{r}
+model_RF_deg_Mg_pH10 = randomForest(formula = as.formula(formula_model_RF_deg_Mg_pH10),
+                                    data = data_train,
+                                    method = "anova",
+                                    nodesize = 10,
+                                    ntree=3)
+```
+
+```{r}
+summary(model_RF_deg_Mg_pH10)
+```
+
+```{r}
+y_pred_RF_train = predict(model_RF_deg_Mg_pH10,data_train,type="response")
+error_RF_train <- mean((y_pred_RF_train-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
+print(error_RF_train)
+
+y_pred_RF_val=predict(model_RF_deg_Mg_pH10,data_val,type="response")
+error_RF_val <- mean((y_pred_RF_val-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
+print(error_RF_val)
+```
 
 
-## deg_Mg_pH10
+```{r}
+models_RF <- c(models_RF, "deg_Mg_pH10")
+errors_RF_train <- c(errors_RF_train, error_RF_train)
+errors_RF_val <- c(errors_RF_val, error_RF_val)
+```
+
+### deg_pH10
 
 
-## deg_pH10
+On charge le modèle lasso utilisé précédemment.
+```{r}
+model_gamma_deg_pH10_pen_lasso <- readRDS("model_gamma_deg_pH10_pen_lasso.rds")
+```
+
+```{r}
+lasso_deg_pH10_coef <-
+  data.frame(matrix(coef(model_gamma_deg_pH10_pen_lasso, s = 'lambda.min')))
+colnames(lasso_deg_pH10_coef) <- "Coefficients"
+rownames(lasso_deg_pH10_coef) <- names_coef
+```
+
+```{r}
+zeros_deg_pH10 <- which(apply(lasso_deg_pH10_coef, 2, function(x) x == 0))
+```
+
+On va garder uniquement les bpps retenus par la modèle lasso vu précédemment pour construire notre modèle Random Forest.
+```{r}
+formula_model_RF_deg_pH10 <- formula_model_RF
+for(i in 0:106)
+{
+  index_bbps_i <- i + 43
+  if(!(index_bbps_i %in% zeros_deg_pH10)) # Si le bpps i n'a pas un coefficient nul dans le lasso
+  {
+    formula_model_RF_deg_pH10 <- paste0(formula_model_RF_deg_pH10, " + bpps_", i)
+  }
+}
+print(formula_model_RF_deg_pH10)
+```
+
+```{r}
+model_RF_deg_pH10 = randomForest(formula = as.formula(formula_model_RF_deg_pH10),
+                                    data = data_train,
+                                    method = "anova",
+                                    nodesize = 10,
+                                    ntree=3)
+```
+
+```{r}
+summary(model_RF_deg_pH10)
+```
+
+```{r}
+y_pred_RF_train = predict(model_RF_deg_pH10,data_train,type="response")
+error_RF_train <- mean((y_pred_RF_train-data_train$deg_pH10)^2,na.rm=TRUE)
+print(error_RF_train)
+
+y_pred_RF_val=predict(model_RF_deg_pH10,data_val,type="response")
+error_RF_val <- mean((y_pred_RF_val-data_val$deg_pH10)^2,na.rm=TRUE)
+print(error_RF_val)
+```
+
+```{r}
+models_RF <- c(models_RF, "deg_pH10")
+errors_RF_train <- c(errors_RF_train, error_RF_train)
+errors_RF_val <- c(errors_RF_val, error_RF_val)
+```
+
+### deg_Mg_50C
 
 
-## deg_Mg_50C
+On charge le modèle lasso utilisé précédemment.
+```{r}
+model_gamma_deg_Mg_50C_pen_lasso <- readRDS("model_gamma_deg_Mg_50C_pen_lasso.rds")
+```
+
+```{r}
+lasso_deg_Mg_50C_coef <-
+  data.frame(matrix(coef(model_gamma_deg_Mg_50C_pen_lasso, s = 'lambda.min')))
+colnames(lasso_deg_Mg_50C_coef) <- "Coefficients"
+rownames(lasso_deg_Mg_50C_coef) <- names_coef
+```
+
+```{r}
+zeros_deg_Mg_50C <- which(apply(lasso_deg_Mg_50C_coef, 2, function(x) x == 0))
+```
+
+On va garder uniquement les bpps retenus par la modèle lasso vu précédemment pour construire notre modèle Random Forest.
+```{r}
+formula_model_RF_deg_Mg_50C <- formula_model_RF
+for(i in 0:106)
+{
+  index_bbps_i <- i + 43
+  if(!(index_bbps_i %in% zeros_deg_Mg_50C)) # Si le bpps i n'a pas un coefficient nul dans le lasso
+  {
+    formula_model_RF_deg_Mg_50C <- paste0(formula_model_RF_deg_Mg_50C, " + bpps_", i)
+  }
+}
+print(formula_model_RF_deg_Mg_50C)
+```
 
 
-## deg_50C
+```{r}
+model_RF_deg_Mg_50C = randomForest(formula = as.formula(formula_model_RF_deg_Mg_50C),
+                                    data = data_train,
+                                    method = "anova",
+                                    nodesize = 10,
+                                    ntree=3)
+```
+
+```{r}
+summary(model_RF_deg_Mg_50C)
+```
+
+```{r}
+y_pred_RF_train = predict(model_RF_deg_Mg_50C,data_train,type="response")
+error_RF_train <- mean((y_pred_RF_train-data_train$deg_Mg_50C)^2,na.rm=TRUE)
+print(error_RF_train)
+
+y_pred_RF_val=predict(model_RF_deg_Mg_50C,data_val,type="response")
+error_RF_val <- mean((y_pred_RF_val-data_val$deg_Mg_50C)^2,na.rm=TRUE)
+print(error_RF_val)
+```
+
+```{r}
+models_RF <- c(models_RF, "deg_Mg_50C")
+errors_RF_train <- c(errors_RF_train, error_RF_train)
+errors_RF_val <- c(errors_RF_val, error_RF_val)
+```
+
+### deg_50C
+
+
+On charge le modèle lasso utilisé précédemment.
+```{r}
+model_gamma_deg_50C_pen_lasso <- readRDS("model_gamma_deg_50C_pen_lasso.rds")
+```
+
+```{r}
+lasso_deg_50C_coef <-
+  data.frame(matrix(coef(model_gamma_deg_50C_pen_lasso, s = 'lambda.min')))
+colnames(lasso_deg_50C_coef) <- "Coefficients"
+rownames(lasso_deg_50C_coef) <- names_coef
+```
+
+```{r}
+zeros_deg_50C <- which(apply(lasso_deg_50C_coef, 2, function(x) x == 0))
+```
+
+On va garder uniquement les bpps retenus par la modèle lasso vu précédemment pour construire notre modèle Random Forest.
+```{r}
+formula_model_RF_deg_50C <- formula_model_RF
+for(i in 0:106)
+{
+  index_bbps_i <- i + 43
+  if(!(index_bbps_i %in% zeros_deg_50C)) # Si le bpps i n'a pas un coefficient nul dans le lasso
+  {
+    formula_model_RF_deg_50C <- paste0(formula_model_RF_deg_50C, " + bpps_", i)
+  }
+}
+print(formula_model_RF_deg_50C)
+```
+
+```{r}
+model_RF_deg_50C = randomForest(formula = as.formula(formula_model_RF_deg_50C),
+                                    data = data_train,
+                                    method = "anova",
+                                    nodesize = 10,
+                                    ntree=3)
+```
+
+```{r}
+summary(model_RF_deg_Mg_50C)
+```
+
+```{r}
+y_pred_RF_train = predict(model_RF_deg_50C,data_train,type="response")
+error_RF_train <- mean((y_pred_RF_train-data_train$deg_50C)^2,na.rm=TRUE)
+print(error_RF_train)
+
+y_pred_RF_val=predict(model_RF_deg_50C,data_val,type="response")
+error_RF_val <- mean((y_pred_RF_val-data_val$deg_50C)^2,na.rm=TRUE)
+print(error_RF_val)
+```
+
+```{r}
+models_RF <- c(models_RF, "deg_50C")
+errors_RF_train <- c(errors_RF_train, error_RF_train)
+errors_RF_val <- c(errors_RF_val, error_RF_val)
+```
+
+### Récapitulatif des résultats
+
+```{r}
+saveRDS(model_RF_reactivity, file = "model_RF_reactivity.rds")
+saveRDS(model_RF_deg_Mg_pH10, file = "model_RF_deg_Mg_pH10.rds")
+saveRDS(model_RF_deg_pH10, file = "model_RF_deg_pH10.rds")
+saveRDS(model_RF_deg_Mg_50C, file = "model_RF_deg_Mg_50C.rds")
+saveRDS(model_RF_deg_50C, file = "model_RF_deg_50C.rds")
+
+loadRDS(file = "model_RF_reactivity.rds")
+loadRDS(file = "model_RF_deg_Mg_pH10.rds")
+loadRDS(file = "model_RF_deg_pH10.rds")
+loadRDS(file = "model_RF_deg_Mg_50C.rds")
+loadRDS(file = "model_RF_deg_50C.rds")
+```
+
+```{r}
+rm(model_gamma_deg_50C_pen_lasso, model_gamma_deg_Mg_50C_pen_lasso,
+   model_gamma_deg_Mg_pH10_pen_lasso, model_gamma_deg_pH10_pen_lasso,
+   model_gamma_reactivity_pen_lasso)
+```
+
+```{r}
+models_RF_df <- data.frame(models_RF, errors_RF_train, errors_RF_val)
+```
+
+```{r}
+models_RF_df
+```
+
+## Optimisation
+
+### reactivity
+
+### deg_Mg_pH10
+
+### deg_pH10
+
+### deg_Mg_50C
+
+### deg_50C

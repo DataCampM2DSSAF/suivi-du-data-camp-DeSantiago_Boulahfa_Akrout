@@ -87,9 +87,9 @@ sum(data$deg_pH10 <= 0)
 sum(data$deg_Mg_pH10 <= 0)
 ```
 
-On stocke une copie des labels dans un dataframe, afin de pouvoir les utiliser pour calculer les erreurs de prédiction de nos futurs modèles.
+On stocke une copie des données initiales dans un dataframe, afin de pouvoir les utiliser pour calculer les erreurs de prédiction de nos futurs modèles mais aussi pour construire les futurs modèles Random Forest (il n'y a pas besoin de translater les labels pour ces modèle).
 ```{r}
-original_data <- data[, (p-4):p]
+original_data <- data
 ```
 
 On effectue une translation pour se placer sur $\mathbb{R}_+^*$.
