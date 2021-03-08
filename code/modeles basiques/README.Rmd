@@ -1,25 +1,65 @@
 ---
-title: "R Notebook"
-output: md_document
+output: github_document
 ---
 
-## Chargement des librairies et des données.
-```{r}
-library(ggplot2)
+# Data Camp Open Vaccine: Modèles basiques
+### AKROUT Leyth, BOULAHFA Jawad, DE SANTIAGO Kylliann
+#### M2 Data Science: Santé, Assurance, Finance
+#### Université d'Evry Val d'Essonne
+### 7 mars 2021
+
+> [Réorganisation des données](#data1)
+
+> [Séparation train/validation](#split)
+
+> [GLM: loi Gamma](#glm)
+
+> [Soumission GLM](#soumission1)
+
+> [Second chargement des données](#data2)
+
+> [Random Forest](#rf)
+
+> [Soumission Random Forest](#soumission2)
+
+```{r, echo=FALSE}
+rm(list = ls())
+```
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 library(tidyverse)
-source("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/projet_fct.R")
+library(caret)
+library(MASS)
+library(doParallel) # calcul parallèle
+library(glmnet)
+library(randomForest)
+library(data.table)
+# source("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/projet_fct.R")
+source("C:/Users/Startklar/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/projet_fct.R")
+# source("./projet_fct.R")
 ```
 
+```{r, echo = FALSE}
+set.seed(1)
+```
+
+
+<a id="data1"></a>
+
+# Réorganisation des données
+
+Chargement du jeu de données.
 ```{r}
-data = read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_train.csv")
-head(data)
-data=data[,-1]
+# data = read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_train.csv")
+data = read.csv("data_train.csv")
+head(data) # une colonne en trop
+data = data[,-1]
 head(data)
 ```
 
+On change les types des variables qui sont mal codées.
 ```{r}
 data=data %>% mutate(sequence = as.factor(sequence)) %>% 
-  #mutate(index_sequence = as.factor(index_sequence)) %>% 
   mutate(seq_be = as.factor(seq_be)) %>% 
   mutate(seq_af = as.factor(seq_af)) %>% 
   mutate(sequence = as.factor(sequence)) %>% 
@@ -31,34 +71,97 @@ data=data %>% mutate(sequence = as.factor(sequence)) %>%
   mutate(loop_type_af = as.factor(loop_type_af)) 
 ```
 
+```{r}
+length_sequence_train <- 68
+```
 
-On filtre maintenant les données qui ont SN_filter=0 :
-
+On filtre maintenant les données qui ont SN_filter=0.
 ```{r}
 print(sum(is.na(data)))
-print(sum(data$SN_filter==0)/68) ## Nombre d'individus dont le SN_filter=0
+print(sum(data$SN_filter==0)/length_sequence_train) # Nombre d'individus dont le SN_filter=0
 data=data[data$SN_filter==1,]
 rownames(data)=NULL#1:108052
 ```
 
-Mise à 0 des valeurs négatives
+Plutôt que mettre à 0 les valeurs négatives, on va effectuer une translation sur chaque label en soustrayant chacune de ses valeurs par la valeur minimale du label puis en ajoutant un bruit afin de se placer sur $\mathbb{R}_+^*$.
 ```{r}
-p=dim(data)[2]
-sum(data[,(p-4):p]<0)
-for (i in (p-4):p){
-  data[which(data[,i]<0),i]=0
-} 
-sum(data[,(p-4):p]<0)
+p = dim(data)[2]
+bruit = 1e-12
 ```
 
-## Création de la base train/validation :
+Initialement, il existe des valeurs négatives pour nos labels.
+```{r}
+sum(data[,(p-4):p] <= 0) # nb total de lignes où il existe des labels qui ont des valeurs négatives
+```
+
+On peut aussi afficher le nombre de lignes où il y a des valeurs négatives pour chacun de nos labels. On peut remarquer que chaque label en possède.
+```{r}
+sum(data$reactivity <= 0)
+sum(data$deg_50C <= 0)
+sum(data$deg_Mg_50C <= 0)
+sum(data$deg_pH10 <= 0)
+sum(data$deg_Mg_pH10 <= 0)
+```
+
+On stocke une copie des données initiales dans un dataframe, afin de pouvoir les utiliser pour calculer les erreurs de prédiction de nos futurs modèles mais aussi pour construire les futurs modèles Random Forest (il n'y a pas besoin de translater les labels pour ces modèle).
+```{r}
+# original_data <- data
+```
+
+On effectue une translation pour se placer sur $\mathbb{R}_+^*$.
+```{r}
+translation_labels <- c()
+for (i in (p-4):p)
+{
+  # On stocke les valeurs utilisées lors des translations de chaque label
+  # afin de pouvoir revenir à leurs valeurs initiales
+  translation_labels <- c(translation_labels, min(data[,i]) - bruit) 
+  # On soustrait à chaque label son minimum (qui est une valeur strictement négative)
+  # l'ajout du bruit permet ensuite d'éliminer les valeurs nulles.
+  data[,i] <- data[,i] - min(data[,i]) + bruit 
+}
+translation_labels <- data.frame(t(translation_labels))
+colnames(translation_labels) <- colnames(data)[(p-4):p]
+```
+
+On a bien retiré toutes les valeurs négatives.
+```{r}
+sum(data[,(p-4):p] <= 0) # Il n'y a plus aucune valeur négative
+```
+
+Il suffira d'ajouter pour chaque label sa valeur dans ce dataframe pour revenir à ses valeurs initiales.
+```{r}
+translation_labels
+```
+
+
+<a id="split"></a>
+
+# Séparation train/validation
 
 ```{r}
 tamp=train_test_split(data)
+index_train = tamp$index_train
+
 data_train=tamp$train
+rownames(data_train) <- NULL
+
 data_val=tamp$val
+rownames(data_val) <- NULL
+
+rm(tamp)
 ```
 
+
+```{r}
+# Valeurs initiales des labels pour le train
+# original_data_train = original_data[index_train,]
+# rownames(original_data_train) <- NULL
+
+# Valeurs initiales des labels pour la validation
+# original_data_val = original_data[-index_train,]
+# rownames(original_data_val) <- NULL
+```
 
 ```{r}
 sum(is.na(data_train))
@@ -66,895 +169,1313 @@ sum(is.na(data_val))
 dim(data_train)[1]+dim(data_val)[1]-dim(data)[1]
 ```
 
+<a id="glm"></a>
 
+# GLM: loi Gamma
+
+Initialisation de vecteurs pour stocker nos résultats.
+
+Résultats pour le label `reactivity`.
 ```{r}
-#rm(tamp,data)
+models_reactivity <- c()
+errors_reactivity_train <- c()
+errors_reactivity_val <- c()
 ```
-
-## Test sur les lois
 
+Résultats pour le label `deg_Mg_pH10`.
 ```{r}
-M=mean(data_train$reactivity,na.rm = TRUE)
-S=var(data_train$reactivity,na.rm = TRUE)
-print(M)
-print(S)
+models_deg_Mg_pH10 <- c()
+errors_deg_Mg_pH10_train <- c()
+errors_deg_Mg_pH10_val <- c()
 ```
 
+Résultats pour le label `deg_pH10`.
 ```{r}
-ks.test(data_train$reactivity,"pexp",1/M)
+models_deg_pH10 <- c()
+errors_deg_pH10_train <- c()
+errors_deg_pH10_val <- c()
 ```
 
+Résultats pour le label `deg_Mg_50C`.
 ```{r}
-alpha_LoiGamma=(M^2)/(S-M^2)
-beta_LoiGamma=(S-M^2)/M
-ks.test(data_train$reactivity,"pgamma",alpha_LoiGamma,beta_LoiGamma)
+models_deg_Mg_50C <- c()
+errors_deg_Mg_50C_train <- c()
+errors_deg_Mg_50C_val <- c()
 ```
 
+Résultats pour le label `deg_50C`.
+```{r}
+models_deg_50C <- c()
+errors_deg_50C_train <- c()
+errors_deg_50C_val <- c()
+```
 
-## Modèles simples : GLM : loi Gamma et inverse.gaussian
+Formule du modèle initial utilisé.
+```{r}
+formula_model_full <- " ~ sequence + index_sequence + structure + predicted_loop_type + seq_be + seq_af + struct_be + struct_af + loop_type_be + loop_type_af"
+for(i in 0:106)
+{
+  formula_model_full <- paste0(formula_model_full, " + bpps_", i)
+}
+print(formula_model_full)
+```
 
-On prédira la variable + un bruit (1e-12) pour que le support de la densité des labels soit dans $\mathbb{R}^*_+$.
+## Reactivity
 
-### Reactivity
+### Premier modèle
 
-#### Loi Gamma
+```{r}
+formula_gamma_reactivity = paste0("reactivity", formula_model_full)
+```
 
-Ici on fera énormément de tests pour essayer de voir quels variables apportent des informations utiles.
+```{r}
+model_gamma_reactivity = glm(formula = formula_gamma_reactivity,
+                             family = Gamma(link = "log"), data = data_train)
+```
 
 ```{r}
-model=glm(reactivity+1e-12~sequence,family = Gamma,data = data_train)
-#summary(model)
+summary(model_gamma_reactivity)
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
+Il est important de noter que le premier modèle n'est pas de plein rang, donc on ne peut pas se fier à ses prédictions. <br>
+Cependant, la pénalisation va nous aider à résoudre ce problème.
+```{r}
+y_pred_gamma_train = predict.glm(model_gamma_reactivity,data_train,type="response")
+error_gamma_train <- mean((y_pred_gamma_train-data_train$reactivity)^2,na.rm=TRUE)
+print(error_gamma_train)
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
+y_pred_gamma_val=predict.glm(model_gamma_reactivity,data_val,type="response")
+error_gamma_val <- mean((y_pred_gamma_val-data_val$reactivity)^2,na.rm=TRUE)
+print(error_gamma_val)
 ```
 
 ```{r}
-model=glm(reactivity+1e-12~(sequence+seq_be+seq_af),family = Gamma,data = data_train)
-#summary(model)
+models_reactivity <- c(models_reactivity, "model_gamma")
+errors_reactivity_train <- c(errors_reactivity_train, error_gamma_train)
+errors_reactivity_val <- c(errors_reactivity_val, error_gamma_val)
+rm(error_gamma_val, error_gamma_train, y_pred_gamma_train, y_pred_gamma_val)
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
+### Pénalisation ridge et lasso
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
+On commence par calculer la matrice de design du model_gamma_reactivity sur le train et le test.
+```{r}
+# Matrice de design du train
+data_train_pen = model.matrix(model_gamma_reactivity)
+#head(data_train_pen)
 ```
 
 ```{r}
-model=glm(reactivity+1e-12~sequence+index_sequence,family = Gamma,data = data_train)
-#summary(model)
+# Pour faire la matrice de design de la validation
+model_gamma_reactivity_val = glm(formula = formula_gamma_reactivity,
+                                 family = Gamma(link = "log"), data = data_val)
+data_val_pen = model.matrix(model_gamma_reactivity_val)
+#head(data_val_pen)
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
-
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
+# On supprime le modèle sur le test
+rm(model_gamma_reactivity_val)
 ```
 
+On pénalise le model_gamma_reactivity avec une pénalité ridge.
+On choisira  dans la suite le $\lambda$ qui minimise l'erreur de cross validation avec
+`s = "lambda.min"`. On peut afficher les coefficients du modèle correspondant.
+```{r}
+#model_gamma_reactivity_pen_ridge = cv.glmnet(data_train_pen, data_train$reactivity,
+#                                             type.measure = "mse",
+#                                             alpha = 0,
+#                                             trace.it = 1)
+```
 
+Sauvegarde du modèle.
 ```{r}
-model=glm(reactivity+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data_train)
-#summary(model)
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
+#saveRDS(model_gamma_reactivity_pen_ridge, "model_gamma_reactivity_pen_ridge.rds")
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
+Chargement du modèle.
+```{r}
+model_gamma_reactivity_pen_ridge <- readRDS("model_gamma_reactivity_pen_ridge.rds")
 ```
 
+```{r}
+coef(model_gamma_reactivity_pen_ridge, s = "lambda.min")
+```
 
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation ridge.
+```{r}
+y_pred_ridge_gamma_train = predict(model_gamma_reactivity_pen_ridge, data_train_pen,
+                                   type = "response", s = "lambda.min")
+y_pred_ridge_gamma_val = predict(model_gamma_reactivity_pen_ridge, data_val_pen,
+                                 type = "response", s = "lambda.min")
+error_ridge_gamma_train <- mean((y_pred_ridge_gamma_train-data_train$reactivity)^2,na.rm=TRUE)
+print(error_ridge_gamma_train)
+error_ridge_gamma_val <- mean((y_pred_ridge_gamma_val-data_val$reactivity)^2,na.rm=TRUE)
+print(error_ridge_gamma_val)
+```
 
+On pénalise le model_gamma_reactivity avec une pénalité lasso.
+On choisira  dans la suite le $\lambda$ qui minimise l'erreur de cross validation avec `s = "lambda.min"`. On peut afficher les coefficients du modèle correspondant.
 ```{r}
-model=glm(reactivity+1e-12~sequence+structure+index_sequence,family = Gamma,data = data_train)
-#summary(model)
+#model_gamma_reactivity_pen_lasso = cv.glmnet(data_train_pen, data_train$reactivity,
+#                                             type.measure = "mse",
+#                                             alpha = 1,
+#                                             trace.it = 1)
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_gamma_reactivity_pen_lasso, "model_gamma_reactivity_pen_lasso.rds")
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
+Chargement du modèle.
+```{r}
+model_gamma_reactivity_pen_lasso <- readRDS("model_gamma_reactivity_pen_lasso.rds")
+```
 
+```{r}
+coef(model_gamma_reactivity_pen_lasso, s = "lambda.min")
 ```
 
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation lasso.
+```{r}
+y_pred_lasso_gamma_train = predict(model_gamma_reactivity_pen_lasso, data_train_pen,
+                                   type="response", s="lambda.min")
+error_lasso_gamma_train <- mean((y_pred_lasso_gamma_train-data_train$reactivity)^2,na.rm=TRUE)
+print(error_lasso_gamma_train)
 
-#### Inverse.gaussian
+y_pred_lasso_gamma_val = predict(model_gamma_reactivity_pen_lasso, data_val_pen,
+                                 type="response", s="lambda.min")
+error_lasso_gamma_val <- mean((y_pred_lasso_gamma_val-data_val$reactivity)^2,na.rm=TRUE)
+print(error_lasso_gamma_val)
+```
 
+On stocke les résultats et on supprime les variables temporaires.
 ```{r}
-model=glm(reactivity+1e-12~sequence,family = inverse.gaussian,data = data_train)
-#summary(model)
+models_reactivity <- c(models_reactivity, "model_gamma_ridge", "model_gamma_lasso")
+errors_reactivity_train <- c(errors_reactivity_train, error_ridge_gamma_train,
+                             error_lasso_gamma_train)
+errors_reactivity_val <- c(errors_reactivity_val, error_ridge_gamma_val, error_lasso_gamma_val)
+rm(error_ridge_gamma_val, error_lasso_gamma_val,
+   error_ridge_gamma_train, error_lasso_gamma_train,
+   y_pred_ridge_gamma_train, y_pred_ridge_gamma_val,
+   y_pred_lasso_gamma_train, y_pred_lasso_gamma_val)
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
+### Pénalisation elastic-net
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
+On choisit $\alpha$ qui minimise le MSE sur la validation.
+```{r}
+#alpha_opti_enet_gamma_reactivity =
+#  alpha_opti_enet(data_train = data_train_pen, data_val = data_val_pen,
+#                  y_true_train = data_train$reactivity,
+#                  y_true_val = data_val$reactivity)
 ```
 
+On trouve $\alpha = 0.8$.
 ```{r}
-model=glm(reactivity+1e-12~(sequence+seq_be+seq_af),family = inverse.gaussian,data = data_train)
-#summary(model)
-
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
-
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
+#print(alpha_opti_enet_gamma_reactivity)
 ```
 
+On construit le modèle avec le choix optimal pour $\alpha$.
 ```{r}
-model=glm(reactivity+1e-12~sequence+index_sequence,family = inverse.gaussian,data = data_train)
-#summary(model)
+#model_gamma_reactivity_pen_enet = cv.glmnet(data_train_pen, data_train$reactivity,
+#                                             type.measure = "mse",
+#                                             alpha = alpha_opti_enet_gamma_reactivity,
+#                                             trace.it = 1)
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_gamma_reactivity_pen_enet, "model_gamma_reactivity_pen_enet.rds")
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
+Chargement du modèle.
+```{r}
+model_gamma_reactivity_pen_enet <- readRDS("model_gamma_reactivity_pen_enet.rds")
 ```
 
+```{r}
+coef(model_gamma_reactivity_pen_enet, s = "lambda.min")
+```
 
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation elastic-net.
 ```{r}
-model=glm(reactivity+1e-12~sequence+predicted_loop_type,family = inverse.gaussian,data = data_train)
-#summary(model)
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
+y_pred_enet_gamma_train = predict(model_gamma_reactivity_pen_enet, data_train_pen,
+                                   type = "response", s = "lambda.min")
+error_enet_gamma_train <- mean((y_pred_enet_gamma_train - data_train$reactivity)^2, na.rm=TRUE)
+print(error_enet_gamma_train)
+
+y_pred_enet_gamma_val = predict(model_gamma_reactivity_pen_enet, data_val_pen,
+                                 type = "response", s = "lambda.min")
+error_enet_gamma_val <- mean((y_pred_enet_gamma_val - data_val$reactivity)^2, na.rm=TRUE)
+print(error_enet_gamma_val)
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
+On stocke les résultats et on supprime les variables temporaires.
+```{r}
+models_reactivity <- c(models_reactivity, "model_gamma_enet")
+errors_reactivity_train <- c(errors_reactivity_train, error_enet_gamma_train)
+errors_reactivity_val <- c(errors_reactivity_val, error_enet_gamma_val)
+rm(error_enet_gamma_train, error_enet_gamma_val,
+   y_pred_enet_gamma_train, y_pred_enet_gamma_val)
 ```
 
+### Récapitulatif des résultats
 
+```{r}
+models_reactivity_errors_df <- data.frame(models_reactivity,
+                                          errors_reactivity_train,
+                                          errors_reactivity_val)
+```
 
 ```{r}
-model=glm(reactivity+1e-12~sequence+structure,family = inverse.gaussian,data = data_train)
-#summary(model)
+models_reactivity_errors_df
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$reactivity)^2,na.rm=TRUE)
+Le meilleur modèle (au sens de la minimisation du MSE sur la validation) est le `model_gamma_enet` (si on exclut le premier modèle qui n'était pas de plein rang).
+```{r}
+models_reactivity_errors_df[which.min(errors_reactivity_val[-1]) + 1, ]
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$reactivity)^2,na.rm=TRUE)
+```{r, echo = FALSE}
+rm(model_gamma_reactivity_pen_enet, model_gamma_reactivity_pen_ridge, model_gamma_reactivity_pen_lasso, model_gamma_reactivity)
 ```
 
+## deg_Mg_pH10
 
-### deg_Mg_pH10
+### Premier modèle
 
-#### Loi Gamma
+```{r}
+formula_gamma_deg_Mg_pH10 = paste0("deg_Mg_pH10", formula_model_full)
+```
 
-Ici on fera énormément de tests pour essayer de voir quels variables apportent des informations utiles.
+```{r}
+model_gamma_deg_Mg_pH10 = glm(formula = formula_gamma_deg_Mg_pH10,
+                              family = Gamma(link = "log"), data = data_train)
+```
 
 ```{r}
-model=glm(deg_Mg_pH10+1e-12~sequence,family = Gamma,data = data_train)
-#summary(model)
+summary(model_gamma_deg_Mg_pH10)
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
+Il est important de noter que le premier modèle n'est pas de plein rang, donc on ne peut pas se fier à ses prédictions. <br>
+Cependant, la pénalisation va nous aider à résoudre ce problème.
+```{r}
+y_pred_gamma_train = predict.glm(model_gamma_deg_Mg_pH10,data_train,type="response")
+error_gamma_train <- mean((y_pred_gamma_train-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
+print(error_gamma_train)
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
+y_pred_gamma_val=predict.glm(model_gamma_deg_Mg_pH10,data_val,type="response")
+error_gamma_val <- mean((y_pred_gamma_val-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
+print(error_gamma_val)
 ```
 
 ```{r}
-model=glm(deg_Mg_pH10+1e-12~(sequence+seq_be+seq_af),family = Gamma,data = data_train)
-#summary(model)
+models_deg_Mg_pH10 <- c(models_deg_Mg_pH10, "model_gamma")
+errors_deg_Mg_pH10_train <- c(errors_deg_Mg_pH10_train, error_gamma_train)
+errors_deg_Mg_pH10_val <- c(errors_deg_Mg_pH10_val, error_gamma_val)
+rm(error_gamma_val, error_gamma_train, y_pred_gamma_train, y_pred_gamma_val)
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
+### Pénalisation ridge et lasso
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
+On commence par calculer la matrice de design du model_gamma_deg_Mg_pH10 sur le train et le test.
+```{r}
+# Matrice de design du train
+data_train_pen = model.matrix(model_gamma_deg_Mg_pH10)
+#head(data_train_pen)
 ```
 
 ```{r}
-model=glm(deg_Mg_pH10+1e-12~sequence+index_sequence,family = Gamma,data = data_train)
-#summary(model)
+# Pour faire la matrice de design de la validation
+model_gamma_deg_Mg_pH10_val = glm(formula = formula_gamma_deg_Mg_pH10,
+                                 family = Gamma(link = "log"), data = data_val)
+data_val_pen = model.matrix(model_gamma_deg_Mg_pH10_val)
+#head(data_val_pen)
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
+# On supprime le modèle sur le test
+rm(model_gamma_deg_Mg_pH10_val)
+```
+
+On pénalise le model_gamma_deg_Mg_pH10 avec une pénalité ridge.
+On choisira  dans la suite le $\lambda$ qui minimise l'erreur de cross validation avec `s = "lambda.min"`. On peut afficher les coefficients du modèle correspondant.
+```{r}
+#model_gamma_deg_Mg_pH10_pen_ridge = cv.glmnet(data_train_pen, data_train$deg_Mg_pH10,
+#                                             type.measure = "mse",
+#                                             alpha = 0,
+#                                             trace.it = 1)
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_gamma_deg_Mg_pH10_pen_ridge, "model_gamma_deg_Mg_pH10_pen_ridge.rds")
 ```
 
+Chargement du modèle.
+```{r}
+model_gamma_deg_Mg_pH10_pen_ridge <- readRDS("model_gamma_deg_Mg_pH10_pen_ridge.rds")
+```
 
 ```{r}
-model=glm(deg_Mg_pH10+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data_train)
-#summary(model)
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
+coef(model_gamma_deg_Mg_pH10_pen_ridge, s = "lambda.min")
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation ridge.
+```{r}
+y_pred_ridge_gamma_train = predict(model_gamma_deg_Mg_pH10_pen_ridge, data_train_pen,
+                                   type = "response", s = "lambda.min")
+y_pred_ridge_gamma_val = predict(model_gamma_deg_Mg_pH10_pen_ridge, data_val_pen,
+                                 type = "response", s = "lambda.min")
+error_ridge_gamma_train <- mean((y_pred_ridge_gamma_train-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
+print(error_ridge_gamma_train)
+error_ridge_gamma_val <- mean((y_pred_ridge_gamma_val-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
+print(error_ridge_gamma_val)
 ```
 
+On pénalise le model_gamma_deg_Mg_pH10 avec une pénalité lasso.
+On choisira  dans la suite le $\lambda$ qui minimise l'erreur de cross validation avec `s = "lambda.min"`. On peut afficher les coefficients du modèle correspondant.
+```{r}
+#model_gamma_deg_Mg_pH10_pen_lasso = cv.glmnet(data_train_pen, data_train$deg_Mg_pH10,
+#                                             type.measure = "mse",
+#                                             alpha = 1,
+#                                             trace.it = 1)
+```
 
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_gamma_deg_Mg_pH10_pen_lasso, "model_gamma_deg_Mg_pH10_pen_lasso.rds")
+```
 
+Chargement du modèle.
 ```{r}
-model=glm(deg_Mg_pH10+1e-12~sequence+structure+index_sequence,family = Gamma,data = data_train)
-#summary(model)
+model_gamma_deg_Mg_pH10_pen_lasso <- readRDS("model_gamma_deg_Mg_pH10_pen_lasso.rds")
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
+```{r}
+coef(model_gamma_deg_Mg_pH10_pen_lasso, s = "lambda.min")
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation lasso.
+```{r}
+y_pred_lasso_gamma_train = predict(model_gamma_deg_Mg_pH10_pen_lasso, data_train_pen,
+                                   type="response", s="lambda.min")
+error_lasso_gamma_train <- mean((y_pred_lasso_gamma_train-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
+print(error_lasso_gamma_train)
 
+y_pred_lasso_gamma_val = predict(model_gamma_deg_Mg_pH10_pen_lasso, data_val_pen,
+                                 type="response", s="lambda.min")
+error_lasso_gamma_val <- mean((y_pred_lasso_gamma_val-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
+print(error_lasso_gamma_val)
 ```
 
+On stocke les résultats et on supprime les variables temporaires.
+```{r}
+models_deg_Mg_pH10 <- c(models_deg_Mg_pH10, "model_gamma_ridge", "model_gamma_lasso")
+errors_deg_Mg_pH10_train <- c(errors_deg_Mg_pH10_train, error_ridge_gamma_train,
+                             error_lasso_gamma_train)
+errors_deg_Mg_pH10_val <- c(errors_deg_Mg_pH10_val, error_ridge_gamma_val, error_lasso_gamma_val)
+rm(error_ridge_gamma_val, error_lasso_gamma_val,
+   error_ridge_gamma_train, error_lasso_gamma_train,
+   y_pred_ridge_gamma_train, y_pred_ridge_gamma_val,
+   y_pred_lasso_gamma_train, y_pred_lasso_gamma_val)
+```
 
-#### Inverse.gaussian
+### Pénalisation elastic-net
 
+On choisit $\alpha$ qui minimise le MSE sur la validation.
 ```{r}
-model=glm(deg_Mg_pH10+1e-12~sequence,family = inverse.gaussian,data = data_train)
-#summary(model)
+#alpha_opti_enet_gamma_deg_Mg_pH10 =
+#  alpha_opti_enet(data_train = data_train_pen, data_val = data_val_pen,
+#                  y_true_train = data_train$deg_Mg_pH10,
+#                  y_true_val = data_val$deg_Mg_pH10)
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
+On trouve $\alpha = 0.7$.
+```{r}
+#print(alpha_opti_enet_gamma_deg_Mg_pH10)
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
+On construit le modèle avec le choix optimal pour $\alpha$.
+```{r}
+#model_gamma_deg_Mg_pH10_pen_enet = cv.glmnet(data_train_pen, data_train$deg_Mg_pH10,
+#                                             type.measure = "mse",
+#                                             alpha = alpha_opti_enet_gamma_deg_Mg_pH10,
+#                                             trace.it = 1)
 ```
 
+Sauvegarde du modèle.
 ```{r}
-model=glm(deg_Mg_pH10+1e-12~(sequence+seq_be),family = inverse.gaussian,data = data_train)
-#summary(model)
+#saveRDS(model_gamma_deg_Mg_pH10_pen_enet, "model_gamma_deg_Mg_pH10_pen_enet.rds")
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
+Chargement du modèle.
+```{r}
+model_gamma_deg_Mg_pH10_pen_enet <- readRDS("model_gamma_deg_Mg_pH10_pen_enet.rds")
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
+```{r}
+coef(model_gamma_deg_Mg_pH10_pen_enet, s = "lambda.min")
 ```
 
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation elastic-net.
 ```{r}
-model=glm(deg_Mg_pH10+1e-12~sequence+index_sequence,family = inverse.gaussian,data = data_train)
-#summary(model)
+y_pred_enet_gamma_train = predict(model_gamma_deg_Mg_pH10_pen_enet, data_train_pen,
+                                   type = "response", s = "lambda.min")
+error_enet_gamma_train <- mean((y_pred_enet_gamma_train - data_train$deg_Mg_pH10)^2, na.rm=TRUE)
+print(error_enet_gamma_train)
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
+y_pred_enet_gamma_val = predict(model_gamma_deg_Mg_pH10_pen_enet, data_val_pen,
+                                 type = "response", s = "lambda.min")
+error_enet_gamma_val <- mean((y_pred_enet_gamma_val - data_val$deg_Mg_pH10)^2, na.rm=TRUE)
+print(error_enet_gamma_val)
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
+On stocke les résultats et on supprime les variables temporaires.
+```{r}
+models_deg_Mg_pH10 <- c(models_deg_Mg_pH10, "model_gamma_enet")
+errors_deg_Mg_pH10_train <- c(errors_deg_Mg_pH10_train, error_enet_gamma_train)
+errors_deg_Mg_pH10_val <- c(errors_deg_Mg_pH10_val, error_enet_gamma_val)
+rm(error_enet_gamma_train, error_enet_gamma_val,
+   y_pred_enet_gamma_train, y_pred_enet_gamma_val)
 ```
 
+### Récapitulatif des résultats
 
 ```{r}
-model=glm(deg_Mg_pH10+1e-12~sequence+predicted_loop_type,family = inverse.gaussian,data = data_train)
-#summary(model)
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
-
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
+models_deg_Mg_pH10_errors_df <- data.frame(models_deg_Mg_pH10,
+                                          errors_deg_Mg_pH10_train,
+                                          errors_deg_Mg_pH10_val)
 ```
 
+```{r}
+models_deg_Mg_pH10_errors_df
+```
 
+Le meilleur modèle (au sens de la minimisation du MSE sur la validation) est le `model_gamma_lasso` (si on exclut le premier modèle qui n'était pas de plein rang).
 ```{r}
-model=glm(deg_Mg_pH10+1e-12~sequence+structure,family = inverse.gaussian,data = data_train)
-#summary(model)
+models_deg_Mg_pH10_errors_df[which.min(errors_deg_Mg_pH10_val[-1]) + 1, ]
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
+```{r, echo = FALSE}
+rm(model_gamma_deg_Mg_pH10_pen_enet, model_gamma_deg_Mg_pH10_pen_ridge, model_gamma_deg_Mg_pH10_pen_lasso, model_gamma_deg_Mg_pH10)
 ```
-
 
 
-### deg_pH10
 
-#### Loi Gamma
+## deg_pH10
 
-Ici on fera énormément de tests pour essayer de voir quels variables apportent des informations utiles.
+### Premier modèle
 
 ```{r}
-model=glm(deg_pH10+1e-12~sequence,family = Gamma,data = data_train)
-#summary(model)
-
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
-
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
+formula_gamma_deg_pH10 =  paste0("deg_pH10", formula_model_full)
 ```
 
 ```{r}
-model=glm(deg_pH10+1e-12~(sequence+seq_be+seq_af),family = Gamma,data = data_train)
-#summary(model)
-
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
-
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
+model_gamma_deg_pH10 = glm(formula = formula_gamma_deg_pH10,
+                             family = Gamma(link = "log"), data = data_train)
 ```
 
 ```{r}
-model=glm(deg_pH10+1e-12~sequence+index_sequence,family = Gamma,data = data_train)
-#summary(model)
-
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
-
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
+summary(model_gamma_deg_pH10)
 ```
-
 
+Il est important de noter que le premier modèle n'est pas de plein rang, donc on ne peut pas se fier à ses prédictions. <br>
+Cependant, la pénalisation va nous aider à résoudre ce problème.
 ```{r}
-model=glm(deg_pH10+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data_train)
-#summary(model)
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
+y_pred_gamma_train = predict.glm(model_gamma_deg_pH10,data_train,type="response")
+error_gamma_train <- mean((y_pred_gamma_train-data_train$deg_pH10)^2,na.rm=TRUE)
+print(error_gamma_train)
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
+y_pred_gamma_val=predict.glm(model_gamma_deg_pH10,data_val,type="response")
+error_gamma_val <- mean((y_pred_gamma_val-data_val$deg_pH10)^2,na.rm=TRUE)
+print(error_gamma_val)
 ```
 
+```{r}
+models_deg_pH10 <- c(models_deg_pH10, "model_gamma")
+errors_deg_pH10_train <- c(errors_deg_pH10_train, error_gamma_train)
+errors_deg_pH10_val <- c(errors_deg_pH10_val, error_gamma_val)
+rm(error_gamma_val, error_gamma_train, y_pred_gamma_train, y_pred_gamma_val)
+```
 
+### Pénalisation ridge et lasso
 
+On commence par calculer la matrice de design du model_gamma_deg_pH10 sur le train et le test.
 ```{r}
-model=glm(deg_pH10+1e-12~sequence+structure+index_sequence,family = Gamma,data = data_train)
-#summary(model)
-
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
+# Matrice de design du train
+data_train_pen = model.matrix(model_gamma_deg_pH10)
+#head(data_train_pen)
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
+```{r}
+# Pour faire la matrice de design de la validation
+model_gamma_deg_pH10_val = glm(formula = formula_gamma_deg_pH10,
+                                 family = Gamma(link = "log"), data = data_val)
+data_val_pen = model.matrix(model_gamma_deg_pH10_val)
+#head(data_val_pen)
 
+# On supprime le modèle sur le test
+rm(model_gamma_deg_pH10_val)
 ```
 
+On pénalise le model_gamma_deg_pH10 avec une pénalité ridge.
+On choisira  dans la suite le $\lambda$ qui minimise l'erreur de cross validation avec `s = "lambda.min"`. On peut afficher les coefficients du modèle correspondant.
+```{r}
+#model_gamma_deg_pH10_pen_ridge = cv.glmnet(data_train_pen, data_train$deg_pH10,
+#                                           type.measure = "mse",
+#                                           alpha = 0,
+#                                           trace.it = 1)
+```
 
-#### Inverse.gaussian
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_gamma_deg_pH10_pen_ridge, "model_gamma_deg_pH10_pen_ridge.rds")
+```
 
+Chargement du modèle.
 ```{r}
-model=glm(deg_pH10+1e-12~sequence,family = inverse.gaussian,data = data_train)
-#summary(model)
+model_gamma_deg_pH10_pen_ridge <- readRDS("model_gamma_deg_pH10_pen_ridge.rds")
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
+```{r}
+coef(model_gamma_deg_pH10_pen_ridge, s = "lambda.min")
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation ridge.
+```{r}
+y_pred_ridge_gamma_train = predict(model_gamma_deg_pH10_pen_ridge, data_train_pen,
+                                   type = "response", s = "lambda.min")
+y_pred_ridge_gamma_val = predict(model_gamma_deg_pH10_pen_ridge, data_val_pen,
+                                 type = "response", s = "lambda.min")
+error_ridge_gamma_train <- mean((y_pred_ridge_gamma_train-data_train$deg_pH10)^2,na.rm=TRUE)
+print(error_ridge_gamma_train)
+error_ridge_gamma_val <- mean((y_pred_ridge_gamma_val-data_val$deg_pH10)^2,na.rm=TRUE)
+print(error_ridge_gamma_val)
 ```
 
+On pénalise le model_gamma_deg_pH10 avec une pénalité lasso.
+On choisira  dans la suite le $\lambda$ qui minimise l'erreur de cross validation avec `s = "lambda.min"`. On peut afficher les coefficients du modèle correspondant.
 ```{r}
-model=glm(deg_pH10+1e-12~(sequence+seq_be),family = inverse.gaussian,data = data_train)
-#summary(model)
+#model_gamma_deg_pH10_pen_lasso = cv.glmnet(data_train_pen, data_train$deg_pH10,
+#                                           type.measure = "mse",
+#                                           alpha = 1,
+#                                           trace.it = 1)
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_gamma_deg_pH10_pen_lasso, "model_gamma_deg_pH10_pen_lasso.rds")
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
+Chargement du modèle.
+```{r}
+model_gamma_deg_pH10_pen_lasso <- readRDS("model_gamma_deg_pH10_pen_lasso.rds")
 ```
 
+```{r}
+coef(model_gamma_deg_pH10_pen_lasso, s = "lambda.min")
+```
 
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation lasso.
 ```{r}
-model=glm(deg_pH10+1e-12~index_sequence,family = inverse.gaussian,data = data_train)
-#summary(model)
+y_pred_lasso_gamma_train = predict(model_gamma_deg_pH10_pen_lasso, data_train_pen,
+                                   type="response", s="lambda.min")
+error_lasso_gamma_train <- mean((y_pred_lasso_gamma_train-data_train$deg_pH10)^2,na.rm=TRUE)
+print(error_lasso_gamma_train)
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
+y_pred_lasso_gamma_val = predict(model_gamma_deg_pH10_pen_lasso, data_val_pen,
+                                 type="response", s="lambda.min")
+error_lasso_gamma_val <- mean((y_pred_lasso_gamma_val-data_val$deg_pH10)^2,na.rm=TRUE)
+print(error_lasso_gamma_val)
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
+On stocke les résultats et on supprime les variables temporaires.
+```{r}
+models_deg_pH10 <- c(models_deg_pH10, "model_gamma_ridge", "model_gamma_lasso")
+errors_deg_pH10_train <- c(errors_deg_pH10_train, error_ridge_gamma_train,
+                             error_lasso_gamma_train)
+errors_deg_pH10_val <- c(errors_deg_pH10_val, error_ridge_gamma_val, error_lasso_gamma_val)
+rm(error_ridge_gamma_val, error_lasso_gamma_val,
+   error_ridge_gamma_train, error_lasso_gamma_train,
+   y_pred_ridge_gamma_train, y_pred_ridge_gamma_val,
+   y_pred_lasso_gamma_train, y_pred_lasso_gamma_val)
 ```
 
+### Pénalisation elastic-net
 
+On choisit $\alpha$ qui minimise le MSE sur la validation.
 ```{r}
-model=glm(deg_pH10+1e-12~sequence+predicted_loop_type,family = inverse.gaussian,data = data_train)
-#summary(model)
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
+#alpha_opti_enet_gamma_deg_pH10 =
+#  alpha_opti_enet(data_train = data_train_pen, data_val = data_val_pen,
+#                  y_true_train = data_train$deg_pH10,
+#                  y_true_val = data_val$deg_pH10)
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
+On trouve $\alpha = 0.5$. 
+```{r}
+#print(alpha_opti_enet_gamma_deg_pH10)
 ```
 
+On construit le modèle avec le choix optimal pour $\alpha$.
+```{r}
+#model_gamma_deg_pH10_pen_enet = cv.glmnet(data_train_pen, data_train$deg_pH10,
+#                                          type.measure = "mse",
+#                                          alpha = alpha_opti_enet_gamma_deg_pH10,
+#                                          trace.it = 1)
+```
 
+Sauvegarde du modèle.
 ```{r}
-model=glm(deg_pH10+1e-12~sequence+structure,family = inverse.gaussian,data = data_train)
-#summary(model)
+#saveRDS(model_gamma_deg_pH10_pen_enet, "model_gamma_deg_pH10_pen_enet.rds")
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_pH10)^2,na.rm=TRUE)
+Chargement du modèle.
+```{r}
+model_gamma_deg_pH10_pen_enet <- readRDS("model_gamma_deg_pH10_pen_enet.rds")
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_pH10)^2,na.rm=TRUE)
+```{r}
+coef(model_gamma_deg_pH10_pen_enet, s = "lambda.min")
 ```
 
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation elastic-net.
+```{r}
+y_pred_enet_gamma_train = predict(model_gamma_deg_pH10_pen_enet, data_train_pen,
+                                   type = "response", s = "lambda.min")
+error_enet_gamma_train <- mean((y_pred_enet_gamma_train - data_train$deg_pH10)^2, na.rm=TRUE)
+print(error_enet_gamma_train)
 
+y_pred_enet_gamma_val = predict(model_gamma_deg_pH10_pen_enet, data_val_pen,
+                                 type = "response", s = "lambda.min")
+error_enet_gamma_val <- mean((y_pred_enet_gamma_val - data_val$deg_pH10)^2, na.rm=TRUE)
+print(error_enet_gamma_val)
+```
 
-### deg_Mg_50C
+On stocke les résultats et on supprime les variables temporaires.
+```{r}
+models_deg_pH10 <- c(models_deg_pH10, "model_gamma_enet")
+errors_deg_pH10_train <- c(errors_deg_pH10_train, error_enet_gamma_train)
+errors_deg_pH10_val <- c(errors_deg_pH10_val, error_enet_gamma_val)
+rm(error_enet_gamma_train, error_enet_gamma_val,
+   y_pred_enet_gamma_train, y_pred_enet_gamma_val)
+```
 
-#### Loi Gamma
 
-Ici on fera énormément de tests pour essayer de voir quels variables apportent des informations utiles.
+### Récapitulatif des résultats
 
 ```{r}
-model=glm(deg_Mg_50C+1e-12~sequence,family = Gamma,data = data_train)
-#summary(model)
-
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
-
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
+models_deg_pH10_errors_df <- data.frame(models_deg_pH10,
+                                          errors_deg_pH10_train,
+                                          errors_deg_pH10_val)
 ```
 
 ```{r}
-model=glm(deg_Mg_50C+1e-12~(sequence+seq_be+seq_af),family = Gamma,data = data_train)
-#summary(model)
-
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
-
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
+models_deg_pH10_errors_df
 ```
 
+Le meilleur modèle (au sens de la minimisation du MSE sur la validation) est le `model_gamma_lasso` (si on exclut le premier modèle qui n'était pas de plein rang).
 ```{r}
-model=glm(deg_Mg_50C+1e-12~sequence+index_sequence,family = Gamma,data = data_train)
-#summary(model)
-
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
+models_deg_pH10_errors_df[which.min(errors_deg_pH10_val[-1]) + 1, ]
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
+```{r, echo = FALSE}
+rm(model_gamma_deg_pH10_pen_enet, model_gamma_deg_pH10_pen_ridge,
+   model_gamma_deg_pH10_pen_lasso, model_gamma_deg_pH10)
 ```
 
 
-```{r}
-model=glm(deg_Mg_50C+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data_train)
-#summary(model)
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
-```
 
 
+## deg_Mg_50C
 
-```{r}
-model=glm(deg_Mg_50C+1e-12~sequence+structure+index_sequence,family = Gamma,data = data_train)
-#summary(model)
+### Premier modèle
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
+```{r}
+formula_gamma_deg_Mg_50C =  paste0("deg_Mg_50C", formula_model_full)
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
+```{r}
+model_gamma_deg_Mg_50C = glm(formula = formula_gamma_deg_Mg_50C,
+                             family = Gamma(link = "log"), data = data_train)
+```
 
+```{r}
+summary(model_gamma_deg_Mg_50C)
 ```
 
+Il est important de noter que le premier modèle n'est pas de plein rang, donc on ne peut pas se fier à ses prédictions. <br>
+Cependant, la pénalisation va nous aider à résoudre ce problème.
+```{r}
+y_pred_gamma_train = predict.glm(model_gamma_deg_Mg_50C,data_train,type="response")
+error_gamma_train <- mean((y_pred_gamma_train-data_train$deg_Mg_50C)^2,na.rm=TRUE)
+print(error_gamma_train)
 
-#### Inverse.gaussian
+y_pred_gamma_val=predict.glm(model_gamma_deg_Mg_50C,data_val,type="response")
+error_gamma_val <- mean((y_pred_gamma_val-data_val$deg_Mg_50C)^2,na.rm=TRUE)
+print(error_gamma_val)
+```
 
 ```{r}
-model=glm(deg_Mg_50C+1e-12~sequence,family = inverse.gaussian,data = data_train)
-#summary(model)
+models_deg_Mg_50C <- c(models_deg_Mg_50C, "model_gamma")
+errors_deg_Mg_50C_train <- c(errors_deg_Mg_50C_train, error_gamma_train)
+errors_deg_Mg_50C_val <- c(errors_deg_Mg_50C_val, error_gamma_val)
+rm(error_gamma_val, error_gamma_train, y_pred_gamma_train, y_pred_gamma_val)
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
+### Pénalisation ridge et lasso
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
+On commence par calculer la matrice de design du model_gamma_deg_Mg_50C sur le train et le test.
+```{r}
+# Matrice de design du train
+data_train_pen = model.matrix(model_gamma_deg_Mg_50C)
+#head(data_train_pen)
 ```
 
 ```{r}
-model=glm(deg_Mg_50C+1e-12~(sequence+seq_be),family = inverse.gaussian,data = data_train)
-#summary(model)
+# Pour faire la matrice de design de la validation
+model_gamma_deg_Mg_50C_val = glm(formula = formula_gamma_deg_Mg_50C,
+                                 family = Gamma(link = "log"), data = data_val)
+data_val_pen = model.matrix(model_gamma_deg_Mg_50C_val)
+#head(data_val_pen)
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
+# On supprime le modèle sur le test
+rm(model_gamma_deg_Mg_50C_val)
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
+On pénalise le model_gamma_deg_Mg_50C avec une pénalité ridge.
+On choisira  dans la suite le $\lambda$ qui minimise l'erreur de cross validation avec `s = "lambda.min"`. On peut afficher les coefficients du modèle correspondant.
+```{r}
+#model_gamma_deg_Mg_50C_pen_ridge = cv.glmnet(data_train_pen, data_train$deg_Mg_50C,
+#                                             type.measure = "mse",
+#                                             alpha = 0,
+#                                             trace.it = 1)
 ```
 
+Sauvegarde du modèle.
 ```{r}
-model=glm(deg_Mg_50C+1e-12~sequence+index_sequence,family = inverse.gaussian,data = data_train)
-#summary(model)
+#saveRDS(model_gamma_deg_Mg_50C_pen_ridge, "model_gamma_deg_Mg_50C_pen_ridge.rds")
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
+Chargement du modèle.
+```{r}
+model_gamma_deg_Mg_50C_pen_ridge <- readRDS("model_gamma_deg_Mg_50C_pen_ridge.rds")
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
+```{r}
+coef(model_gamma_deg_Mg_50C_pen_ridge, s = "lambda.min")
 ```
 
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation ridge.
+```{r}
+y_pred_ridge_gamma_train = predict(model_gamma_deg_Mg_50C_pen_ridge, data_train_pen,
+                                   type = "response", s = "lambda.min")
+y_pred_ridge_gamma_val = predict(model_gamma_deg_Mg_50C_pen_ridge, data_val_pen,
+                                 type = "response", s = "lambda.min")
+error_ridge_gamma_train <- mean((y_pred_ridge_gamma_train-data_train$deg_Mg_50C)^2,na.rm=TRUE)
+print(error_ridge_gamma_train)
+error_ridge_gamma_val <- mean((y_pred_ridge_gamma_val-data_val$deg_Mg_50C)^2,na.rm=TRUE)
+print(error_ridge_gamma_val)
+```
 
+On pénalise le model_gamma_deg_Mg_50C avec une pénalité lasso.
+On choisira  dans la suite le $\lambda$ qui minimise l'erreur de cross validation avec `s = "lambda.min"`. On peut afficher les coefficients du modèle correspondant.
 ```{r}
-model=glm(deg_Mg_50C+1e-12~sequence+predicted_loop_type,family = inverse.gaussian,data = data_train)
-#summary(model)
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
+#model_gamma_deg_Mg_50C_pen_lasso = cv.glmnet(data_train_pen, data_train$deg_Mg_50C,
+#                                             type.measure = "mse",
+#                                             alpha = 1,
+#                                             trace.it = 1)
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_gamma_deg_Mg_50C_pen_lasso, "model_gamma_deg_Mg_50C_pen_lasso.rds")
 ```
 
+Chargement du modèle.
+```{r}
+model_gamma_deg_Mg_50C_pen_lasso <- readRDS("model_gamma_deg_Mg_50C_pen_lasso.rds")
+```
 
 ```{r}
-model=glm(deg_Mg_50C+1e-12~sequence+structure+index_sequence,family = inverse.gaussian,data = data_train)
-#summary(model)
+coef(model_gamma_deg_Mg_50C_pen_lasso, s = "lambda.min")
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_Mg_50C)^2,na.rm=TRUE)
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation lasso.
+```{r}
+y_pred_lasso_gamma_train = predict(model_gamma_deg_Mg_50C_pen_lasso, data_train_pen,
+                                   type="response", s="lambda.min")
+error_lasso_gamma_train <- mean((y_pred_lasso_gamma_train-data_train$deg_Mg_50C)^2,na.rm=TRUE)
+print(error_lasso_gamma_train)
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_Mg_50C)^2,na.rm=TRUE)
+y_pred_lasso_gamma_val = predict(model_gamma_deg_Mg_50C_pen_lasso, data_val_pen,
+                                 type="response", s="lambda.min")
+error_lasso_gamma_val <- mean((y_pred_lasso_gamma_val-data_val$deg_Mg_50C)^2,na.rm=TRUE)
+print(error_lasso_gamma_val)
 ```
 
-
+On stocke les résultats et on supprime les variables temporaires.
+```{r}
+models_deg_Mg_50C <- c(models_deg_Mg_50C, "model_gamma_ridge", "model_gamma_lasso")
+errors_deg_Mg_50C_train <- c(errors_deg_Mg_50C_train, error_ridge_gamma_train,
+                             error_lasso_gamma_train)
+errors_deg_Mg_50C_val <- c(errors_deg_Mg_50C_val, error_ridge_gamma_val, error_lasso_gamma_val)
+rm(error_ridge_gamma_val, error_lasso_gamma_val,
+   error_ridge_gamma_train, error_lasso_gamma_train,
+   y_pred_ridge_gamma_train, y_pred_ridge_gamma_val,
+   y_pred_lasso_gamma_train, y_pred_lasso_gamma_val)
+```
 
-### deg_50C
+### Pénalisation elastic-net
 
-#### Loi Gamma
+On choisit $\alpha$ qui minimise le MSE sur la validation.
+```{r}
+#alpha_opti_enet_gamma_deg_Mg_50C =
+#  alpha_opti_enet(data_train = data_train_pen, data_val = data_val_pen,
+#                  y_true_train = data_train$deg_Mg_50C,
+#                  y_true_val = data_val$deg_Mg_50C)
+```
 
-Ici on fera énormément de tests pour essayer de voir quels variables apportent des informations utiles.
+On trouve $\alpha = 1$. Cela correspond à la pénalisation lasso.
+```{r}
+#print(alpha_opti_enet_gamma_deg_Mg_50C)
+```
 
+On construit le modèle avec le choix optimal pour $\alpha$.
 ```{r}
-model=glm(deg_50C+1e-12~sequence,family = Gamma,data = data_train)
-#summary(model)
+#model_gamma_deg_Mg_50C_pen_enet = cv.glmnet(data_train_pen, data_train$deg_Mg_50C,
+#                                            type.measure = "mse",
+#                                            alpha = alpha_opti_enet_gamma_deg_Mg_50C,
+#                                            trace.it = 1)
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_gamma_deg_Mg_50C_pen_enet, "model_gamma_deg_Mg_50C_pen_enet.rds")
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
+Chargement du modèle.
+```{r}
+model_gamma_deg_Mg_50C_pen_enet <- readRDS("model_gamma_deg_Mg_50C_pen_enet.rds")
 ```
 
 ```{r}
-model=glm(deg_50C+1e-12~(sequence+seq_be+seq_af),family = Gamma,data = data_train)
-#summary(model)
+coef(model_gamma_deg_Mg_50C_pen_enet, s = "lambda.min")
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation elastic-net.
+```{r}
+y_pred_enet_gamma_train = predict(model_gamma_deg_Mg_50C_pen_enet, data_train_pen,
+                                   type = "response", s = "lambda.min")
+error_enet_gamma_train <- mean((y_pred_enet_gamma_train - data_train$deg_Mg_50C)^2, na.rm=TRUE)
+print(error_enet_gamma_train)
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
+y_pred_enet_gamma_val = predict(model_gamma_deg_Mg_50C_pen_enet, data_val_pen,
+                                 type = "response", s = "lambda.min")
+error_enet_gamma_val <- mean((y_pred_enet_gamma_val - data_val$deg_Mg_50C)^2, na.rm=TRUE)
+print(error_enet_gamma_val)
 ```
 
+On stocke les résultats et on supprime les variables temporaires.
 ```{r}
-model=glm(deg_50C+1e-12~sequence+index_sequence,family = Gamma,data = data_train)
-#summary(model)
+models_deg_Mg_50C <- c(models_deg_Mg_50C, "model_gamma_enet")
+errors_deg_Mg_50C_train <- c(errors_deg_Mg_50C_train, error_enet_gamma_train)
+errors_deg_Mg_50C_val <- c(errors_deg_Mg_50C_val, error_enet_gamma_val)
+rm(error_enet_gamma_train, error_enet_gamma_val,
+   y_pred_enet_gamma_train, y_pred_enet_gamma_val)
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
+### Récapitulatif des résultats
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
+```{r}
+models_deg_Mg_50C_errors_df <- data.frame(models_deg_Mg_50C,
+                                          errors_deg_Mg_50C_train,
+                                          errors_deg_Mg_50C_val)
 ```
 
-
 ```{r}
-model=glm(deg_50C+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data_train)
-#summary(model)
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
+models_deg_Mg_50C_errors_df
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
+Le meilleur modèle (au sens de la minimisation du MSE sur la validation) est le `model_gamma_lasso` (si on exclut le premier modèle qui n'était pas de plein rang).
+```{r}
+models_deg_Mg_50C_errors_df[which.min(errors_deg_Mg_50C_val[-1]) + 1, ]
 ```
 
 
+```{r, echo = FALSE}
+rm(model_gamma_deg_Mg_50C_pen_enet, model_gamma_deg_Mg_50C_pen_ridge, model_gamma_deg_Mg_50C_pen_lasso, model_gamma_deg_Mg_50C)
+```
 
-```{r}
-model=glm(deg_50C+1e-12~sequence+structure+index_sequence,family = Gamma,data = data_train)
-#summary(model)
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
 
-```
 
+## deg_50C
 
-#### Inverse.gaussian
+### Premier modèle
 
 ```{r}
-model=glm(deg_50C+1e-12~sequence,family = inverse.gaussian,data = data_train)
-#summary(model)
-
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
-
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
+formula_gamma_deg_50C = paste0("deg_50C", formula_model_full)
 ```
 
 ```{r}
-model=glm(deg_50C+1e-12~(sequence+seq_be+seq_af),family = inverse.gaussian,data = data_train)
-#summary(model)
-
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
-
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
+model_gamma_deg_50C = glm(formula = formula_gamma_deg_50C,
+                             family = Gamma(link = "log"), data = data_train)
 ```
 
 ```{r}
-model=glm(deg_50C+1e-12~sequence+index_sequence,family = inverse.gaussian,data = data_train)
-#summary(model)
+summary(model_gamma_deg_50C)
+```
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
+Il est important de noter que le premier modèle n'est pas de plein rang, donc on ne peut pas se fier à ses prédictions. <br>
+Cependant, la pénalisation va nous aider à résoudre ce problème.
+```{r}
+y_pred_gamma_train = predict.glm(model_gamma_deg_50C,data_train,type="response")
+error_gamma_train <- mean((y_pred_gamma_train-data_train$deg_50C)^2,na.rm=TRUE)
+print(error_gamma_train)
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
+y_pred_gamma_val=predict.glm(model_gamma_deg_50C,data_val,type="response")
+error_gamma_val <- mean((y_pred_gamma_val-data_val$deg_50C)^2,na.rm=TRUE)
+print(error_gamma_val)
 ```
 
-
 ```{r}
-model=glm(deg_50C+1e-12~sequence+predicted_loop_type+index_sequence,family = inverse.gaussian,data = data_train)
-#summary(model)
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
-
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
+models_deg_50C <- c(models_deg_50C, "model_gamma")
+errors_deg_50C_train <- c(errors_deg_50C_train, error_gamma_train)
+errors_deg_50C_val <- c(errors_deg_50C_val, error_gamma_val)
+rm(error_gamma_val, error_gamma_train, y_pred_gamma_train, y_pred_gamma_val)
 ```
 
+### Pénalisation ridge et lasso
 
+On commence par calculer la matrice de design du model_gamma_deg_50C sur le train et le test.
 ```{r}
-model=glm(deg_50C+1e-12~sequence+structure+index_sequence,family = inverse.gaussian,data = data_train)
-#summary(model)
+# Matrice de design du train
+data_train_pen = model.matrix(model_gamma_deg_50C)
+#head(data_train_pen)
+```
 
-y_pred=predict.glm(model,data_val,type="response")
-mean((y_pred-data_val$deg_50C)^2,na.rm=TRUE)
+```{r}
+# Pour faire la matrice de design de la validation
+model_gamma_deg_50C_val = glm(formula = formula_gamma_deg_50C,
+                              family = Gamma(link = "log"), data = data_val)
+data_val_pen = model.matrix(model_gamma_deg_50C_val)
+#head(data_val_pen)
 
-y_pred=predict.glm(model,data_train,type="response")
-mean((y_pred-data_train$deg_50C)^2,na.rm=TRUE)
+# On supprime le modèle sur le test
+rm(model_gamma_deg_50C_val)
 ```
 
+On pénalise le model_gamma_deg_50C avec une pénalité ridge.
+On choisira  dans la suite le $\lambda$ qui minimise l'erreur de cross validation avec `s = "lambda.min"`. On peut afficher les coefficients du modèle correspondant.
+```{r}
+#model_gamma_deg_50C_pen_ridge = cv.glmnet(data_train_pen, data_train$deg_50C,
+#                                          type.measure = "mse",
+#                                          alpha = 0,
+#                                          trace.it = 1)
+```
 
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_gamma_deg_50C_pen_ridge, "model_gamma_deg_50C_pen_ridge.rds")
+```
 
+Chargement du modèle.
+```{r}
+model_gamma_deg_50C_pen_ridge <- readRDS("model_gamma_deg_50C_pen_ridge.rds")
+```
 
+```{r}
+coef(model_gamma_deg_50C_pen_ridge, s = "lambda.min")
+```
 
-## Première vrai soumission :
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation ridge.
+```{r}
+y_pred_ridge_gamma_train = predict(model_gamma_deg_50C_pen_ridge, data_train_pen,
+                                   type = "response", s = "lambda.min")
+y_pred_ridge_gamma_val = predict(model_gamma_deg_50C_pen_ridge, data_val_pen,
+                                 type = "response", s = "lambda.min")
+error_ridge_gamma_train <- mean((y_pred_ridge_gamma_train-data_train$deg_50C)^2,na.rm=TRUE)
+print(error_ridge_gamma_train)
+error_ridge_gamma_val <- mean((y_pred_ridge_gamma_val-data_val$deg_50C)^2,na.rm=TRUE)
+print(error_ridge_gamma_val)
+```
 
+On pénalise le model_gamma_deg_50C avec une pénalité lasso.
+On choisira  dans la suite le $\lambda$ qui minimise l'erreur de cross validation avec `s = "lambda.min"`. On peut afficher les coefficients du modèle correspondant.
 ```{r}
-data_test=read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_test.csv")
-data_test= data_test%>% mutate(sequence = as.factor(sequence)) %>% 
-  mutate(index_sequence = as.factor(index_sequence)) %>% 
-  mutate(seq_be = as.factor(seq_be)) %>% 
-  mutate(seq_af = as.factor(seq_af)) %>% 
-  mutate(structure = as.factor(structure)) %>% 
-  mutate(predicted_loop_type = as.factor(predicted_loop_type))
-head(data_test)
+#model_gamma_deg_50C_pen_lasso = cv.glmnet(data_train_pen, data_train$deg_50C,
+#                                          type.measure = "mse",
+#                                          alpha = 1,
+#                                          trace.it = 1)
 ```
 
+Sauvegarde du modèle.
 ```{r}
-model_reactivity=glm(reactivity+1e-12~sequence,family = Gamma,data = data)
-model_deg_Mg_pH10=glm(deg_Mg_pH10+1e-12~sequence,family = Gamma,data = data)
-model_deg_pH10=glm(deg_pH10+1e-12~sequence,family = Gamma,data = data)
-model_deg_Mg_50C=glm(deg_Mg_50C+1e-12~sequence,family = Gamma,data = data)
-model_deg_50C=glm(deg_50C+1e-12~sequence,family = Gamma,data = data)
+#saveRDS(model_gamma_deg_50C_pen_lasso, "model_gamma_deg_50C_pen_lasso.rds")
 ```
 
+Chargement du modèle.
 ```{r}
-y_test_pred=read.csv(file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
-y_test_pred[,2]=predict.glm(model_reactivity,data_test,type = "response")
-y_test_pred[,3]=predict.glm(model_deg_Mg_pH10,data_test,type = "response")
-y_test_pred[,4]=predict.glm(model_deg_pH10,data_test,type = "response")
-y_test_pred[,5]=predict.glm(model_deg_Mg_50C,data_test,type = "response")
-y_test_pred[,6]=predict.glm(model_deg_50C,data_test,type = "response")
+model_gamma_deg_50C_pen_lasso <- readRDS("model_gamma_deg_50C_pen_lasso.rds")
 ```
 
 ```{r}
-head(y_test_pred)
+coef(model_gamma_deg_50C_pen_lasso, s = "lambda.min")
 ```
 
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation lasso.
 ```{r}
-#write.csv(y_test_pred,file = "sample_submission.csv",row.names=FALSE)
-#tamp=read.csv(file = "sample_submission_2.csv")
-#head(tamp)
+y_pred_lasso_gamma_train = predict(model_gamma_deg_50C_pen_lasso, data_train_pen,
+                                   type="response", s="lambda.min")
+error_lasso_gamma_train <- mean((y_pred_lasso_gamma_train-data_train$deg_50C)^2,na.rm=TRUE)
+print(error_lasso_gamma_train)
+
+y_pred_lasso_gamma_val = predict(model_gamma_deg_50C_pen_lasso, data_val_pen,
+                                 type="response", s="lambda.min")
+error_lasso_gamma_val <- mean((y_pred_lasso_gamma_val-data_val$deg_50C)^2,na.rm=TRUE)
+print(error_lasso_gamma_val)
 ```
 
+On stocke les résultats et on supprime les variables temporaires.
+```{r}
+models_deg_50C <- c(models_deg_50C, "model_gamma_ridge", "model_gamma_lasso")
+errors_deg_50C_train <- c(errors_deg_50C_train, error_ridge_gamma_train,
+                             error_lasso_gamma_train)
+errors_deg_50C_val <- c(errors_deg_50C_val, error_ridge_gamma_val, error_lasso_gamma_val)
+rm(error_ridge_gamma_val, error_lasso_gamma_val,
+   error_ridge_gamma_train, error_lasso_gamma_train,
+   y_pred_ridge_gamma_train, y_pred_ridge_gamma_val,
+   y_pred_lasso_gamma_train, y_pred_lasso_gamma_val)
+```
 
+### Pénalisation elastic-net
 
-## Deuxième soumission :
+On choisit $\alpha$ qui minimise le MSE sur la validation.
+```{r}
+#alpha_opti_enet_gamma_deg_50C =
+#  alpha_opti_enet(data_train = data_train_pen, data_val = data_val_pen,
+#                  y_true_train = data_train$deg_50C,
+#                  y_true_val = data_val$deg_50C)
+```
 
+On trouve $\alpha = 0.8$.
 ```{r}
-data_test=read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_test.csv")
-data_test= data_test%>% mutate(sequence = as.factor(sequence)) %>% 
-  #mutate(index_sequence = as.factor(index_sequence)) %>% 
-  mutate(seq_be = as.factor(seq_be)) %>% 
-  mutate(seq_af = as.factor(seq_af)) %>% 
-  mutate(structure = as.factor(structure)) %>% 
-  mutate(predicted_loop_type = as.factor(predicted_loop_type))
-head(data_test)
+#print(alpha_opti_enet_gamma_deg_50C)
 ```
 
+On construit le modèle avec le choix optimal pour $\alpha$.
 ```{r}
-model_reactivity=glm(reactivity+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data)
-model_deg_Mg_pH10=glm(deg_Mg_pH10+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data)
-model_deg_pH10=glm(deg_pH10+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data)
-model_deg_Mg_50C=glm(deg_Mg_50C+1e-12~sequence+predicted_loop_type+index_sequence,family = Gamma,data = data)
-model_deg_50C=glm(deg_50C+1e-12 ~ sequence+predicted_loop_type+index_sequence,family = Gamma,data = data)
+#model_gamma_deg_50C_pen_enet = cv.glmnet(data_train_pen, data_train$deg_50C,
+#                                         type.measure = "mse",
+#                                         alpha = alpha_opti_enet_gamma_deg_50C,
+#                                         trace.it = 1)
 ```
 
+Sauvegarde du modèle.
 ```{r}
-y_test_pred=read.csv(file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
-y_test_pred[,2]=predict.glm(model_reactivity,data_test,type = "response")-1e-12
-y_test_pred[,3]=predict.glm(model_deg_Mg_pH10,data_test,type = "response")-1e-12
-y_test_pred[,4]=predict.glm(model_deg_pH10,data_test,type = "response")-1e-12
-y_test_pred[,5]=predict.glm(model_deg_Mg_50C,data_test,type = "response")-1e-12
-y_test_pred[,6]=predict.glm(model_deg_50C,data_test,type = "response")-1e-12
+#saveRDS(model_gamma_deg_50C_pen_enet, "model_gamma_deg_50C_pen_enet.rds")
 ```
 
+Chargement du modèle.
 ```{r}
-head(y_test_pred)
+model_gamma_deg_50C_pen_enet <- readRDS("model_gamma_deg_50C_pen_enet.rds")
 ```
 
 ```{r}
-write.csv(y_test_pred,file = "sample_submission.csv",row.names=FALSE)
-#tamp=read.csv(file = "sample_submission_2.csv")
-#head(tamp)
+coef(model_gamma_deg_50C_pen_enet, s = "lambda.min")
 ```
 
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation elastic-net.
+```{r}
+y_pred_enet_gamma_train = predict(model_gamma_deg_50C_pen_enet, data_train_pen,
+                                   type = "response", s = "lambda.min")
+error_enet_gamma_train <- mean((y_pred_enet_gamma_train - data_train$deg_50C)^2, na.rm=TRUE)
+print(error_enet_gamma_train)
 
-Private score : 0.49538
-Public score : 0.42532
+y_pred_enet_gamma_val = predict(model_gamma_deg_50C_pen_enet, data_val_pen,
+                                 type = "response", s = "lambda.min")
+error_enet_gamma_val <- mean((y_pred_enet_gamma_val - data_val$deg_50C)^2, na.rm=TRUE)
+print(error_enet_gamma_val)
+```
 
+On stocke les résultats et on supprime les variables temporaires.
+```{r}
+models_deg_50C <- c(models_deg_50C, "model_gamma_enet")
+errors_deg_50C_train <- c(errors_deg_50C_train, error_enet_gamma_train)
+errors_deg_50C_val <- c(errors_deg_50C_val, error_enet_gamma_val)
+rm(error_enet_gamma_train, error_enet_gamma_val,
+   y_pred_enet_gamma_train, y_pred_enet_gamma_val)
+```
 
-## Troisième soumission :
+### Récapitulatif des résultats
 
 ```{r}
-data_test=read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_test.csv")
-data_test= data_test%>% mutate(sequence = as.factor(sequence)) %>% 
-  #mutate(index_sequence = as.factor(index_sequence)) %>% 
-  mutate(seq_be = as.factor(seq_be)) %>% 
-  mutate(seq_af = as.factor(seq_af)) %>% 
-  mutate(structure = as.factor(structure)) %>% 
-  mutate(predicted_loop_type = as.factor(predicted_loop_type))
-head(data_test)
+models_deg_50C_errors_df <- data.frame(models_deg_50C,
+                                       errors_deg_50C_train,
+                                       errors_deg_50C_val)
 ```
 
 ```{r}
-model_reactivity=glm(reactivity+1e-12~(sequence+predicted_loop_type+index_sequence+seq_af+seq_be)^2,family = Gamma,data = data)
-model_deg_Mg_pH10=glm(deg_Mg_pH10+1e-12~(sequence+predicted_loop_type+index_sequence+seq_be)^2,family = Gamma,data = data)
-model_deg_pH10=glm(deg_pH10+1e-12~(sequence+predicted_loop_type+index_sequence+seq_be)^2,family = Gamma,data = data)
-model_deg_Mg_50C=glm(deg_Mg_50C+1e-12~(sequence+predicted_loop_type+index_sequence+seq_af+seq_be)^2,family = Gamma,data = data)
-model_deg_50C=glm(deg_50C+1e-12 ~ (sequence+predicted_loop_type+index_sequence+seq_af+seq_be)^2,family = Gamma,data = data)
+models_deg_50C_errors_df
 ```
 
+Le meilleur modèle (au sens de la minimisation du MSE sur la validation) est le `model_gamma_lasso` (si on exclut le premier modèle qui n'était pas de plein rang).
 ```{r}
-y_test_pred=read.csv(file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
-y_test_pred[,2]=predict.glm(model_reactivity,data_test,type = "response")-1e-12
-y_test_pred[,3]=predict.glm(model_deg_Mg_pH10,data_test,type = "response")-1e-12
-y_test_pred[,4]=predict.glm(model_deg_pH10,data_test,type = "response")-1e-12
-y_test_pred[,5]=predict.glm(model_deg_Mg_50C,data_test,type = "response")-1e-12
-y_test_pred[,6]=predict.glm(model_deg_50C,data_test,type = "response")-1e-12
+models_deg_50C_errors_df[which.min(errors_deg_50C_val[-1]) + 1, ]
 ```
 
-```{r}
-head(y_test_pred)
+```{r, echo = FALSE}
+rm(model_gamma_deg_50C_pen_enet, model_gamma_deg_50C_pen_ridge,
+   model_gamma_deg_50C_pen_lasso, model_gamma_deg_50C)
 ```
 
-```{r}
-write.csv(y_test_pred,file = "sample_submission.csv",row.names=FALSE)
-#tamp=read.csv(file = "sample_submission_2.csv")
-#head(tamp)
+```{r, echo = FALSE}
+#save.image(file = "GLM_optimization_final_version.Rdata")
+```
+
+```{r, echo = FALSE}
+#rm(list = ls())
+#load(file = "GLM_optimization_final_version.Rdata")
 ```
 
-Private score : 0.48389
-Public score : 0.40055
 
+<a id="soumission1"></a>
 
-## Quatrième soumission [juste pour voir les résultats, attention matrice pas de plein rang, donc pas à utiliser !!!!]
+# Soumission GLM
 
-```{r}
-data_test=read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_test.csv")
-data_test= data_test%>% mutate(sequence = as.factor(sequence)) %>% 
-  #mutate(index_sequence = as.factor(index_sequence)) %>% 
-  mutate(seq_be = as.factor(seq_be)) %>% 
-  mutate(seq_af = as.factor(seq_af)) %>% 
-  mutate(structure = as.factor(structure)) %>% 
-  mutate(predicted_loop_type = as.factor(predicted_loop_type))
-head(data_test)
+```{r, echo = FALSE}
+#rm(model_gamma_reactivity, model_gamma_reactivity_pen_ridge, model_gamma_reactivity_pen_enet,
+#   model_gamma_deg_Mg_pH10, model_gamma_deg_Mg_pH10_pen_ridge, model_gamma_deg_Mg_pH10_pen_enet,
+#   model_gamma_deg_pH10, model_gamma_deg_pH10_pen_ridge, model_gamma_deg_pH10_pen_enet,
+#   model_gamma_deg_Mg_50C, model_gamma_deg_Mg_50C_pen_ridge, model_gamma_deg_Mg_50C_pen_enet,
+#   model_gamma_deg_50C, model_gamma_deg_50C_pen_ridge, model_gamma_deg_50C_pen_enet)
 ```
 
-```{r}
-model_reactivity=glm(reactivity+1e-12~(predicted_loop_type+index_sequence+sequence+seq_af+seq_be)^2,family = Gamma,data = data)
-model_deg_Mg_pH10=glm(deg_Mg_pH10+1e-12~(sequence+predicted_loop_type+index_sequence+seq_be)^2,family = Gamma,data = data)
-model_deg_pH10=glm(deg_pH10+1e-12~(sequence+predicted_loop_type+index_sequence+seq_be)^2,family = Gamma,data = data)
-model_deg_Mg_50C=glm(deg_Mg_50C+1e-12~(sequence+predicted_loop_type+index_sequence+seq_af+seq_be)^2,family = Gamma,data = data)
-model_deg_50C=glm(deg_50C+1e-12 ~ (sequence+predicted_loop_type+index_sequence+seq_af+seq_be)^2,family = Gamma,data = data)
+```{r, echo = FALSE}
+#rm(data_train_pen, data_val_pen)
 ```
 
 ```{r}
-y_test_pred=read.csv(file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
-y_test_pred[,2]=predict.glm(model_reactivity,data_test,type = "response")-1e-12
-y_test_pred[,3]=predict.glm(model_deg_Mg_pH10,data_test,type = "response")-1e-12
-y_test_pred[,4]=predict.glm(model_deg_pH10,data_test,type = "response")-1e-12
-y_test_pred[,5]=predict.glm(model_deg_Mg_50C,data_test,type = "response")-1e-12
-y_test_pred[,6]=predict.glm(model_deg_50C,data_test,type = "response")-1e-12
+##data_test=read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_test.csv")
+#data_test = read.csv("data_test.csv")
 ```
 
 ```{r}
-head(y_test_pred)
+#data_test = data_test[,-1] %>% mutate(sequence = as.factor(sequence)) %>% 
+#  mutate(seq_be = as.factor(seq_be)) %>% 
+#  mutate(seq_af = as.factor(seq_af)) %>% 
+#  mutate(structure = as.factor(structure)) %>% 
+#  mutate(predicted_loop_type = as.factor(predicted_loop_type))
+#
+## On ajoute de "faux labels" pour pouvoir construire la matrice de design du test
+## La matrice de design d'un modèle n'est pas influencée par la valeur des labels
+## donc cette démarche est correcte
+#data_test = data_test %>% mutate(reactivity = rep(0.5, nrow(data_test))) %>% 
+#  mutate(deg_Mg_pH10 = rep(0.5, nrow(data_test))) %>% 
+#  mutate(deg_pH10 = rep(0.5, nrow(data_test))) %>% 
+#  mutate(deg_Mg_50C = rep(0.5, nrow(data_test))) %>% 
+#  mutate(deg_50C = rep(0.5, nrow(data_test)))
 ```
 
 ```{r}
-write.csv(y_test_pred,file = "sample_submission.csv",row.names=FALSE)
-#tamp=read.csv(file = "sample_submission_2.csv")
-#head(tamp)
+#head(data_test)
 ```
 
-
-
-## Regression tree + RandomForest
 ```{r}
-library(rpart)
-library(rpart.plot)
-
-model_tree=rpart(reactivity+1e-12~sequence+predicted_loop_type+index_sequence+seq_be+seq_af+structure,data = data_train,method = "anova",control = rpart.control(cp=0.00001))
-#rpart.plot(model_tree)
+#head(data_test[,119:123])
 ```
 
 
 ```{r}
-y_pred=predict(model_tree,data_train)
-mean((y_pred-data_train$reactivity)^2)
+##y_test_pred=read.csv(file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
 
-y_pred=predict(model_tree,data_val)
-mean((y_pred-data_val$reactivity)^2)
+#y_test_pred = read.csv(file = "sample_submission.csv")
 ```
 
 ```{r}
-library(randomForest)
-model_tree=randomForest(reactivity+1e-12~sequence+predicted_loop_type+index_sequence+seq_be+seq_af+structure,data = data_train,method = "anova",ntree=100)
+#model_reactivity = readRDS("model_gamma_reactivity_pen_enet.rds")
+#model_deg_Mg_pH10 = readRDS("model_gamma_deg_Mg_pH10_pen_enet.rds")
+#model_deg_pH10 = readRDS("model_gamma_deg_pH10_pen_enet.rds")
+#model_deg_Mg_50C = readRDS("model_gamma_deg_Mg_50C_pen_enet.rds")
+#model_deg_50C = readRDS("model_gamma_deg_50C_pen_enet.rds")
 ```
 
 ```{r}
-y_pred=predict(model_tree,data_train)
-mean((y_pred-data_train$reactivity)^2)
+# Pour faire la matrice de design du test
 
-y_pred=predict(model_tree,data_val)
-mean((y_pred-data_val$reactivity)^2)
+#model_gamma_reactivity_test = glm(formula = formula_gamma_reactivity,
+#                               family = Gamma(link = "log"), data = data_test)
+#data_test_pen_reactivity = model.matrix(model_gamma_reactivity_test)
+#
+#model_gamma_deg_Mg_pH10_test = glm(formula = formula_gamma_deg_Mg_pH10,
+#                               family = Gamma(link = "log"), data = data_test)
+#data_test_pen_deg_Mg_pH10 = model.matrix(model_gamma_deg_Mg_pH10_test)
+#
+#model_gamma_deg_pH10_test = glm(formula = formula_gamma_deg_pH10,
+#                               family = Gamma(link = "log"), data = data_test)
+#data_test_pen_deg_pH10 = model.matrix(model_gamma_deg_pH10_test)
+#
+#model_gamma_deg_Mg_50C_test = glm(formula = formula_gamma_deg_Mg_50C,
+#                                  family = Gamma(link = "log"), data = data_test)
+#data_test_pen_deg_Mg_50C = model.matrix(model_gamma_deg_Mg_50C_test)
+#
+#model_gamma_deg_50C_test = glm(formula = formula_gamma_deg_50C,
+#                               family = Gamma(link = "log"), data = data_test)
+#data_test_pen_deg_50C = model.matrix(model_gamma_deg_50C_test)
 ```
 
+```{r}
+# On supprime les modèles sur le test
+#rm(model_gamma_reactivity_test, model_gamma_deg_Mg_pH10_test,
+#   model_gamma_deg_pH10_test, model_gamma_deg_Mg_50C_test,
+#   model_gamma_deg_50C_test)
+```
 
 ```{r}
-model_reactivity=randomForest(reactivity+1e-12~sequence+predicted_loop_type+index_sequence+seq_be+seq_af+structure,data = data,method = "anova",ntree=100)
-model_deg_Mg_pH10=randomForest(deg_Mg_pH10+1e-12~sequence+predicted_loop_type+index_sequence+seq_be+seq_af+structure,data = data,method = "anova",ntree=100)
-model_deg_pH10=randomForest(deg_pH10+1e-12~sequence+predicted_loop_type+index_sequence+seq_be+seq_af+structure,data = data,method = "anova",ntree=100)
-model_deg_Mg_50C=randomForest(deg_Mg_50C+1e-12~sequence+predicted_loop_type+index_sequence+seq_be+seq_af+structure,data = data,method = "anova",ntree=100)
-model_deg_50C=randomForest(deg_50C+1e-12~sequence+predicted_loop_type+index_sequence+seq_be+seq_af+structure,data = data,method = "anova",ntree=100)
+# ATTENTION: nos modèles prédisent les labels translatés, donc il faut revenir aux labels initiaux en retirant la translation (on a stocké l'opposé de la translation de chaque label dans translation_labels, d'où le "+" au lieu du "-")
+
+#y_test_pred = y_test_pred %>%
+#  mutate(reactivity = predict(model_reactivity, data_test_pen_reactivity,
+#                              type="response", s="lambda.min") +
+#           translation_labels[1]) %>%
+#  mutate(deg_Mg_pH10 = predict(model_deg_Mg_pH10, data_test_pen_deg_Mg_pH10,
+#                               type="response", s="lambda.min") +
+#           translation_labels[2]) %>%
+#  mutate(deg_pH10 = predict(model_deg_pH10, data_test_pen_deg_pH10,
+#                            type="response", s="lambda.min") +
+#           translation_labels[3]) %>%
+#  mutate(deg_Mg_50C = predict(model_deg_Mg_50C, data_test_pen_deg_Mg_50C,
+#                              type="response", s="lambda.min") +
+#           translation_labels[4]) %>%
+#  mutate(deg_50C = predict(model_deg_50C, data_test_pen_deg_50C,
+#                           type="response", s="lambda.min") +
+#           translation_labels[5]) %>% mutate_all(unlist)
 ```
 
 ```{r}
-y_test_pred=read.csv(file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
-y_test_pred[,2]=predict(model_reactivity,data_test)-1e-12
-y_test_pred[,3]=predict(model_deg_Mg_pH10,data_test)-1e-12
-y_test_pred[,4]=predict(model_deg_pH10,data_test)-1e-12
-y_test_pred[,5]=predict(model_deg_Mg_50C,data_test)-1e-12
-y_test_pred[,6]=predict(model_deg_50C,data_test)-1e-12
+#save(y_test_pred, file = "sample_submission_GLM.Rda")
 ```
 
 ```{r}
-head(y_test_pred)
+#load(file = "sample_submission_GLM.Rda")
 ```
 
 ```{r}
-write.csv(y_test_pred,file = "sample_submission.csv",row.names=FALSE)
-#tamp=read.csv(file = "sample_submission_2.csv")
-#head(tamp)
+#fwrite(y_test_pred, "sample_submission_GLM.csv")
 ```
+
+<a id="data2"></a>
+
+# Second chargement des données
+
+<a id="rf"></a>
+
+# Random Forest
+
+<a id="soumission2"></a>
+
+# Soumission Random Forest
 
 
-Private score : 0.45519
-Public score : 0.35488
