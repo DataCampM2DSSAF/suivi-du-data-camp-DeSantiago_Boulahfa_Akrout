@@ -102,3 +102,8 @@ Kylliann -> modèle MLP : ajout du One-Hot-Encoding pour les variables qualitati
 Ce souci est autant vrai pour les variables qualitatives (ex : place du nucléotide dans l'ARN) que pour les modèles utilisés. On ne peut pas utiliser directement un CNN sur les matrices bpps par souci de différence de dimension entre le jeu train et le jeu test.
 
 Jawad -> Premiers modèles Random Forest pour chacun des labels. On utilise les modèles GLM avec pénalisation lasso précédemment obtenus pour sélectionner les BPPS à inclure.
+
+**Lundi 8 Mars**:
+
+Jawad -> Modèles GLM: il y avait des erreurs de syntaxe à corriger. Une fois cela corrigé, il s'avère que la pénalisation elastic-net est généralement meilleur que le lasso.
+Ecriture d'un fichier csv pour une soumission utilisant les modèles GLM avec pénalisation elastic-net.
