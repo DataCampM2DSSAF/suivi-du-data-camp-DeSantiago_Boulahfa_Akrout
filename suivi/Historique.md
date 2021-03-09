@@ -107,3 +107,8 @@ Jawad -> Premiers modèles Random Forest pour chacun des labels. On utilise les 
 
 Jawad -> Modèles GLM: il y avait des erreurs de syntaxe à corriger. Une fois cela corrigé, il s'avère que la pénalisation elastic-net est généralement meilleur que le lasso.
 Ecriture d'un fichier csv pour une soumission utilisant les modèles GLM avec pénalisation elastic-net.
+
+**Mardi 9 Mars**:
+
+Jawad -> Modèles Random Forest: après correction des erreurs de syntaxe sur les modèles GLM, il s'avère que la démarche consistant à utiliser les modèles GLM avec pénalisation lasso pour sélectionner les BPPS n'est plus pertinente.
+Mise à jour du Readme.Rmd avec les premiers modèles Random Forest.
