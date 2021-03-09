@@ -5205,10 +5205,734 @@ models_deg_50C_errors_df[which.min(errors_deg_50C_val[-1]) + 1, ]
 
 # Second chargement des données
 
+Chargement du jeu de données.
+
+``` r
+# data = read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_train.csv")
+data = read.csv("data_train.csv")
+head(data) # une colonne en trop
+```
+
+    ##   X             id sequence index_sequence seq_be seq_af structure struct_be
+    ## 1 0 id_001f94081_0        G              1      O      G         .         O
+    ## 2 1 id_001f94081_1        G              2      G      A         .         .
+    ## 3 2 id_001f94081_2        A              3      G      A         .         .
+    ## 4 3 id_001f94081_3        A              4      A      A         .         .
+    ## 5 4 id_001f94081_4        A              5      A      A         .         .
+    ## 6 5 id_001f94081_5        A              6      A      G         (         .
+    ##   struct_af predicted_loop_type loop_type_be loop_type_af bpps_0 bpps_1 bpps_2
+    ## 1         .                   E            O            E      0      0      0
+    ## 2         .                   E            E            E      0      0      0
+    ## 3         .                   E            E            E      0      0      0
+    ## 4         .                   E            E            E      0      0      0
+    ## 5         (                   E            E            S      0      0      0
+    ## 6         (                   S            E            S      0      0      0
+    ##   bpps_3 bpps_4 bpps_5 bpps_6     bpps_7     bpps_8     bpps_9    bpps_10
+    ## 1      0      0      0      0 0.00655413 0.00922102 0.00809437 0.02178570
+    ## 2      0      0      0      0 0.01820530 0.00511209 0.03865270 0.00000000
+    ## 3      0      0      0      0 0.00000000 0.02759040 0.00000000 0.00000000
+    ## 4      0      0      0      0 0.00000000 0.00000000 0.00000000 0.00000000
+    ## 5      0      0      0      0 0.00000000 0.00000000 0.00000000 0.00000000
+    ## 6      0      0      0      0 0.00000000 0.00310716 0.00000000 0.00117008
+    ##   bpps_11 bpps_12 bpps_13 bpps_14 bpps_15    bpps_16 bpps_17 bpps_18 bpps_19
+    ## 1       0       0       0       0       0 0.00112002       0       0       0
+    ## 2       0       0       0       0       0 0.00000000       0       0       0
+    ## 3       0       0       0       0       0 0.00000000       0       0       0
+    ## 4       0       0       0       0       0 0.00000000       0       0       0
+    ## 5       0       0       0       0       0 0.00000000       0       0       0
+    ## 6       0       0       0       0       0 0.00000000       0       0       0
+    ##   bpps_20 bpps_21 bpps_22    bpps_23    bpps_24 bpps_25 bpps_26 bpps_27 bpps_28
+    ## 1       0       0       0 0.00465301 0.00241507       0       0       0       0
+    ## 2       0       0       0 0.00432340 0.00000000       0       0       0       0
+    ## 3       0       0       0 0.00000000 0.00000000       0       0       0       0
+    ## 4       0       0       0 0.00000000 0.00127806       0       0       0       0
+    ## 5       0       0       0 0.00000000 0.00284297       0       0       0       0
+    ## 6       0       0       0 0.00000000 0.06989900       0       0       0       0
+    ##      bpps_29    bpps_30 bpps_31    bpps_32 bpps_33 bpps_34 bpps_35    bpps_36
+    ## 1 0.01146960 0.00492862       0 0.00353196       0       0       0 0.00000000
+    ## 2 0.00856126 0.00000000       0 0.00113814       0       0       0 0.00000000
+    ## 3 0.00000000 0.00000000       0 0.00000000       0       0       0 0.00000000
+    ## 4 0.00000000 0.00000000       0 0.00000000       0       0       0 0.00105140
+    ## 5 0.00000000 0.00000000       0 0.00000000       0       0       0 0.00702873
+    ## 6 0.00000000 0.00685149       0 0.00000000       0       0       0 0.00000000
+    ##      bpps_37    bpps_38    bpps_39    bpps_40 bpps_41 bpps_42 bpps_43 bpps_44
+    ## 1 0.00000000 0.00000000 0.00159406 0.00629747       0       0       0       0
+    ## 2 0.00000000 0.00144827 0.01117350 0.00000000       0       0       0       0
+    ## 3 0.00132569 0.01070460 0.00000000 0.00000000       0       0       0       0
+    ## 4 0.00947066 0.00000000 0.00000000 0.00000000       0       0       0       0
+    ## 5 0.00000000 0.00000000 0.00000000 0.00000000       0       0       0       0
+    ## 6 0.00000000 0.00000000 0.00000000 0.00000000       0       0       0       0
+    ##   bpps_45 bpps_46 bpps_47 bpps_48 bpps_49 bpps_50 bpps_51 bpps_52 bpps_53
+    ## 1       0       0       0       0       0       0       0       0       0
+    ## 2       0       0       0       0       0       0       0       0       0
+    ## 3       0       0       0       0       0       0       0       0       0
+    ## 4       0       0       0       0       0       0       0       0       0
+    ## 5       0       0       0       0       0       0       0       0       0
+    ## 6       0       0       0       0       0       0       0       0       0
+    ##   bpps_54 bpps_55    bpps_56    bpps_57    bpps_58 bpps_59    bpps_60 bpps_61
+    ## 1       0       0 0.00000000 0.00529590 0.00605378       0 0.00000000       0
+    ## 2       0       0 0.00515096 0.00579555 0.00000000       0 0.00000000       0
+    ## 3       0       0 0.00000000 0.00000000 0.00000000       0 0.00000000       0
+    ## 4       0       0 0.00000000 0.00000000 0.00000000       0 0.00132209       0
+    ## 5       0       0 0.00000000 0.00000000 0.00000000       0 0.00000000       0
+    ## 6       0       0 0.00000000 0.00000000 0.00000000       0 0.00000000       0
+    ##     bpps_62   bpps_63 bpps_64 bpps_65    bpps_66 bpps_67 bpps_68 bpps_69
+    ## 1 0.0012753 0.0136668       0       0 0.00152313       0       0       0
+    ## 2 0.0133479 0.0000000       0       0 0.00000000       0       0       0
+    ## 3 0.0000000 0.0000000       0       0 0.00000000       0       0       0
+    ## 4 0.0000000 0.0000000       0       0 0.00000000       0       0       0
+    ## 5 0.0000000 0.0000000       0       0 0.00000000       0       0       0
+    ## 6 0.0000000 0.0000000       0       0 0.00000000       0       0       0
+    ##   bpps_70 bpps_71 bpps_72 bpps_73 bpps_74 bpps_75    bpps_76    bpps_77 bpps_78
+    ## 1       0       0       0       0       0       0 0.00000000 0.00141133       0
+    ## 2       0       0       0       0       0       0 0.00000000 0.00443669       0
+    ## 3       0       0       0       0       0       0 0.00287931 0.00000000       0
+    ## 4       0       0       0       0       0       0 0.00000000 0.00000000       0
+    ## 5       0       0       0       0       0       0 0.00140816 0.00000000       0
+    ## 6       0       0       0       0       0       0 0.04401610 0.00000000       0
+    ##      bpps_79    bpps_80    bpps_81   bpps_82 bpps_83 bpps_84    bpps_85 bpps_86
+    ## 1 0.00275790 0.00598010 0.00597894 0.0138868       0       0 0.00152801       0
+    ## 2 0.00969451 0.00376965 0.02291480 0.0000000       0       0 0.00000000       0
+    ## 3 0.00000000 0.01750240 0.00000000 0.0000000       0       0 0.00000000       0
+    ## 4 0.00000000 0.00000000 0.00000000 0.0000000       0       0 0.00000000       0
+    ## 5 0.00000000 0.00000000 0.00000000 0.0000000       0       0 0.00000000       0
+    ## 6 0.00000000 0.00235197 0.00000000 0.0000000       0       0 0.00000000       0
+    ##   bpps_87 bpps_88 bpps_89 bpps_90 bpps_91 bpps_92 bpps_93    bpps_94 bpps_95
+    ## 1       0       0       0       0       0       0       0 0.00952557       0
+    ## 2       0       0       0       0       0       0       0 0.00578259       0
+    ## 3       0       0       0       0       0       0       0 0.00000000       0
+    ## 4       0       0       0       0       0       0       0 0.00000000       0
+    ## 5       0       0       0       0       0       0       0 0.00000000       0
+    ## 6       0       0       0       0       0       0       0 0.00000000       0
+    ##   bpps_96    bpps_97 bpps_98 bpps_99   bpps_100 bpps_101 bpps_102   bpps_103
+    ## 1       0 0.01114590       0       0 0.01163650        0        0 0.01053770
+    ## 2       0 0.00633638       0       0 0.00603195        0        0 0.00563282
+    ## 3       0 0.00000000       0       0 0.00000000        0        0 0.00000000
+    ## 4       0 0.00000000       0       0 0.00000000        0        0 0.00000000
+    ## 5       0 0.00000000       0       0 0.00000000        0        0 0.00000000
+    ## 6       0 0.00000000       0       0 0.00000000        0        0 0.00000000
+    ##   bpps_104 bpps_105   bpps_106 signal_to_noise SN_filter reactivity deg_Mg_pH10
+    ## 1        0        0 0.01467360           6.894         1     0.3297      0.7556
+    ## 2        0        0 0.00620374           6.894         1     1.5693      2.9830
+    ## 3        0        0 0.00000000           6.894         1     1.1227      0.2526
+    ## 4        0        0 0.00000000           6.894         1     0.8686      1.3789
+    ## 5        0        0 0.00000000           6.894         1     0.7217      0.6376
+    ## 6        0        0 0.00000000           6.894         1     0.4384      0.3313
+    ##   deg_pH10 deg_Mg_50C deg_50C
+    ## 1   2.3375     0.3581  0.6382
+    ## 2   3.5060     2.9683  3.4773
+    ## 3   0.3008     0.2589  0.9988
+    ## 4   1.0108     1.4552  1.3228
+    ## 5   0.2635     0.7244  0.7877
+    ## 6   0.3403     0.4971  0.5890
+
+``` r
+data = data[,-1]
+head(data)
+```
+
+    ##               id sequence index_sequence seq_be seq_af structure struct_be
+    ## 1 id_001f94081_0        G              1      O      G         .         O
+    ## 2 id_001f94081_1        G              2      G      A         .         .
+    ## 3 id_001f94081_2        A              3      G      A         .         .
+    ## 4 id_001f94081_3        A              4      A      A         .         .
+    ## 5 id_001f94081_4        A              5      A      A         .         .
+    ## 6 id_001f94081_5        A              6      A      G         (         .
+    ##   struct_af predicted_loop_type loop_type_be loop_type_af bpps_0 bpps_1 bpps_2
+    ## 1         .                   E            O            E      0      0      0
+    ## 2         .                   E            E            E      0      0      0
+    ## 3         .                   E            E            E      0      0      0
+    ## 4         .                   E            E            E      0      0      0
+    ## 5         (                   E            E            S      0      0      0
+    ## 6         (                   S            E            S      0      0      0
+    ##   bpps_3 bpps_4 bpps_5 bpps_6     bpps_7     bpps_8     bpps_9    bpps_10
+    ## 1      0      0      0      0 0.00655413 0.00922102 0.00809437 0.02178570
+    ## 2      0      0      0      0 0.01820530 0.00511209 0.03865270 0.00000000
+    ## 3      0      0      0      0 0.00000000 0.02759040 0.00000000 0.00000000
+    ## 4      0      0      0      0 0.00000000 0.00000000 0.00000000 0.00000000
+    ## 5      0      0      0      0 0.00000000 0.00000000 0.00000000 0.00000000
+    ## 6      0      0      0      0 0.00000000 0.00310716 0.00000000 0.00117008
+    ##   bpps_11 bpps_12 bpps_13 bpps_14 bpps_15    bpps_16 bpps_17 bpps_18 bpps_19
+    ## 1       0       0       0       0       0 0.00112002       0       0       0
+    ## 2       0       0       0       0       0 0.00000000       0       0       0
+    ## 3       0       0       0       0       0 0.00000000       0       0       0
+    ## 4       0       0       0       0       0 0.00000000       0       0       0
+    ## 5       0       0       0       0       0 0.00000000       0       0       0
+    ## 6       0       0       0       0       0 0.00000000       0       0       0
+    ##   bpps_20 bpps_21 bpps_22    bpps_23    bpps_24 bpps_25 bpps_26 bpps_27 bpps_28
+    ## 1       0       0       0 0.00465301 0.00241507       0       0       0       0
+    ## 2       0       0       0 0.00432340 0.00000000       0       0       0       0
+    ## 3       0       0       0 0.00000000 0.00000000       0       0       0       0
+    ## 4       0       0       0 0.00000000 0.00127806       0       0       0       0
+    ## 5       0       0       0 0.00000000 0.00284297       0       0       0       0
+    ## 6       0       0       0 0.00000000 0.06989900       0       0       0       0
+    ##      bpps_29    bpps_30 bpps_31    bpps_32 bpps_33 bpps_34 bpps_35    bpps_36
+    ## 1 0.01146960 0.00492862       0 0.00353196       0       0       0 0.00000000
+    ## 2 0.00856126 0.00000000       0 0.00113814       0       0       0 0.00000000
+    ## 3 0.00000000 0.00000000       0 0.00000000       0       0       0 0.00000000
+    ## 4 0.00000000 0.00000000       0 0.00000000       0       0       0 0.00105140
+    ## 5 0.00000000 0.00000000       0 0.00000000       0       0       0 0.00702873
+    ## 6 0.00000000 0.00685149       0 0.00000000       0       0       0 0.00000000
+    ##      bpps_37    bpps_38    bpps_39    bpps_40 bpps_41 bpps_42 bpps_43 bpps_44
+    ## 1 0.00000000 0.00000000 0.00159406 0.00629747       0       0       0       0
+    ## 2 0.00000000 0.00144827 0.01117350 0.00000000       0       0       0       0
+    ## 3 0.00132569 0.01070460 0.00000000 0.00000000       0       0       0       0
+    ## 4 0.00947066 0.00000000 0.00000000 0.00000000       0       0       0       0
+    ## 5 0.00000000 0.00000000 0.00000000 0.00000000       0       0       0       0
+    ## 6 0.00000000 0.00000000 0.00000000 0.00000000       0       0       0       0
+    ##   bpps_45 bpps_46 bpps_47 bpps_48 bpps_49 bpps_50 bpps_51 bpps_52 bpps_53
+    ## 1       0       0       0       0       0       0       0       0       0
+    ## 2       0       0       0       0       0       0       0       0       0
+    ## 3       0       0       0       0       0       0       0       0       0
+    ## 4       0       0       0       0       0       0       0       0       0
+    ## 5       0       0       0       0       0       0       0       0       0
+    ## 6       0       0       0       0       0       0       0       0       0
+    ##   bpps_54 bpps_55    bpps_56    bpps_57    bpps_58 bpps_59    bpps_60 bpps_61
+    ## 1       0       0 0.00000000 0.00529590 0.00605378       0 0.00000000       0
+    ## 2       0       0 0.00515096 0.00579555 0.00000000       0 0.00000000       0
+    ## 3       0       0 0.00000000 0.00000000 0.00000000       0 0.00000000       0
+    ## 4       0       0 0.00000000 0.00000000 0.00000000       0 0.00132209       0
+    ## 5       0       0 0.00000000 0.00000000 0.00000000       0 0.00000000       0
+    ## 6       0       0 0.00000000 0.00000000 0.00000000       0 0.00000000       0
+    ##     bpps_62   bpps_63 bpps_64 bpps_65    bpps_66 bpps_67 bpps_68 bpps_69
+    ## 1 0.0012753 0.0136668       0       0 0.00152313       0       0       0
+    ## 2 0.0133479 0.0000000       0       0 0.00000000       0       0       0
+    ## 3 0.0000000 0.0000000       0       0 0.00000000       0       0       0
+    ## 4 0.0000000 0.0000000       0       0 0.00000000       0       0       0
+    ## 5 0.0000000 0.0000000       0       0 0.00000000       0       0       0
+    ## 6 0.0000000 0.0000000       0       0 0.00000000       0       0       0
+    ##   bpps_70 bpps_71 bpps_72 bpps_73 bpps_74 bpps_75    bpps_76    bpps_77 bpps_78
+    ## 1       0       0       0       0       0       0 0.00000000 0.00141133       0
+    ## 2       0       0       0       0       0       0 0.00000000 0.00443669       0
+    ## 3       0       0       0       0       0       0 0.00287931 0.00000000       0
+    ## 4       0       0       0       0       0       0 0.00000000 0.00000000       0
+    ## 5       0       0       0       0       0       0 0.00140816 0.00000000       0
+    ## 6       0       0       0       0       0       0 0.04401610 0.00000000       0
+    ##      bpps_79    bpps_80    bpps_81   bpps_82 bpps_83 bpps_84    bpps_85 bpps_86
+    ## 1 0.00275790 0.00598010 0.00597894 0.0138868       0       0 0.00152801       0
+    ## 2 0.00969451 0.00376965 0.02291480 0.0000000       0       0 0.00000000       0
+    ## 3 0.00000000 0.01750240 0.00000000 0.0000000       0       0 0.00000000       0
+    ## 4 0.00000000 0.00000000 0.00000000 0.0000000       0       0 0.00000000       0
+    ## 5 0.00000000 0.00000000 0.00000000 0.0000000       0       0 0.00000000       0
+    ## 6 0.00000000 0.00235197 0.00000000 0.0000000       0       0 0.00000000       0
+    ##   bpps_87 bpps_88 bpps_89 bpps_90 bpps_91 bpps_92 bpps_93    bpps_94 bpps_95
+    ## 1       0       0       0       0       0       0       0 0.00952557       0
+    ## 2       0       0       0       0       0       0       0 0.00578259       0
+    ## 3       0       0       0       0       0       0       0 0.00000000       0
+    ## 4       0       0       0       0       0       0       0 0.00000000       0
+    ## 5       0       0       0       0       0       0       0 0.00000000       0
+    ## 6       0       0       0       0       0       0       0 0.00000000       0
+    ##   bpps_96    bpps_97 bpps_98 bpps_99   bpps_100 bpps_101 bpps_102   bpps_103
+    ## 1       0 0.01114590       0       0 0.01163650        0        0 0.01053770
+    ## 2       0 0.00633638       0       0 0.00603195        0        0 0.00563282
+    ## 3       0 0.00000000       0       0 0.00000000        0        0 0.00000000
+    ## 4       0 0.00000000       0       0 0.00000000        0        0 0.00000000
+    ## 5       0 0.00000000       0       0 0.00000000        0        0 0.00000000
+    ## 6       0 0.00000000       0       0 0.00000000        0        0 0.00000000
+    ##   bpps_104 bpps_105   bpps_106 signal_to_noise SN_filter reactivity deg_Mg_pH10
+    ## 1        0        0 0.01467360           6.894         1     0.3297      0.7556
+    ## 2        0        0 0.00620374           6.894         1     1.5693      2.9830
+    ## 3        0        0 0.00000000           6.894         1     1.1227      0.2526
+    ## 4        0        0 0.00000000           6.894         1     0.8686      1.3789
+    ## 5        0        0 0.00000000           6.894         1     0.7217      0.6376
+    ## 6        0        0 0.00000000           6.894         1     0.4384      0.3313
+    ##   deg_pH10 deg_Mg_50C deg_50C
+    ## 1   2.3375     0.3581  0.6382
+    ## 2   3.5060     2.9683  3.4773
+    ## 3   0.3008     0.2589  0.9988
+    ## 4   1.0108     1.4552  1.3228
+    ## 5   0.2635     0.7244  0.7877
+    ## 6   0.3403     0.4971  0.5890
+
+On change les types des variables qui sont mal codées.
+
+``` r
+data=data %>% mutate(sequence = as.factor(sequence)) %>% 
+  mutate(seq_be = as.factor(seq_be)) %>% 
+  mutate(seq_af = as.factor(seq_af)) %>% 
+  mutate(sequence = as.factor(sequence)) %>% 
+  mutate(structure = as.factor(structure)) %>%
+  mutate(struct_be = as.factor(struct_be)) %>% 
+  mutate(struct_af = as.factor(struct_af)) %>% 
+  mutate(predicted_loop_type = as.factor(predicted_loop_type)) %>% 
+  mutate(loop_type_be = as.factor(loop_type_be)) %>% 
+  mutate(loop_type_af = as.factor(loop_type_af)) 
+```
+
+``` r
+length_sequence_train <- 68
+```
+
+On filtre maintenant les données qui ont SN\_filter=0.
+
+``` r
+print(sum(is.na(data)))
+```
+
+    ## [1] 0
+
+``` r
+print(sum(data$SN_filter==0)/length_sequence_train) # Nombre d'individus dont le SN_filter=0
+```
+
+    ## [1] 811
+
+``` r
+data=data[data$SN_filter==1,]
+rownames(data)=NULL
+```
+
+## Création de la base train/validation
+
+``` r
+tamp=train_test_split(data)
+index_train = tamp$index_train
+
+data_train=tamp$train
+rownames(data_train) <- NULL
+
+data_val=tamp$val
+rownames(data_val) <- NULL
+```
+
+``` r
+sum(is.na(data_train))
+```
+
+    ## [1] 0
+
+``` r
+sum(is.na(data_val))
+```
+
+    ## [1] 0
+
+``` r
+dim(data_train)[1]+dim(data_val)[1]-dim(data)[1]
+```
+
+    ## [1] 0
+
 <a id="rf"></a>
 
 # Random Forest
 
+Initialisation de vecteurs pour stocker nos résultats.
+
+``` r
+models_RF <- c()
+errors_RF_train <- c()
+errors_RF_val <- c()
+```
+
+Formule du modèle initial utilisé.
+
+``` r
+formula_model_full <- " ~ sequence + index_sequence + structure + predicted_loop_type + seq_be + seq_af + struct_be + struct_af + loop_type_be + loop_type_af"
+for(i in 0:106)
+{
+  formula_model_full <- paste0(formula_model_full, " + bpps_", i)
+}
+print(formula_model_full)
+```
+
+    ## [1] " ~ sequence + index_sequence + structure + predicted_loop_type + seq_be + seq_af + struct_be + struct_af + loop_type_be + loop_type_af + bpps_0 + bpps_1 + bpps_2 + bpps_3 + bpps_4 + bpps_5 + bpps_6 + bpps_7 + bpps_8 + bpps_9 + bpps_10 + bpps_11 + bpps_12 + bpps_13 + bpps_14 + bpps_15 + bpps_16 + bpps_17 + bpps_18 + bpps_19 + bpps_20 + bpps_21 + bpps_22 + bpps_23 + bpps_24 + bpps_25 + bpps_26 + bpps_27 + bpps_28 + bpps_29 + bpps_30 + bpps_31 + bpps_32 + bpps_33 + bpps_34 + bpps_35 + bpps_36 + bpps_37 + bpps_38 + bpps_39 + bpps_40 + bpps_41 + bpps_42 + bpps_43 + bpps_44 + bpps_45 + bpps_46 + bpps_47 + bpps_48 + bpps_49 + bpps_50 + bpps_51 + bpps_52 + bpps_53 + bpps_54 + bpps_55 + bpps_56 + bpps_57 + bpps_58 + bpps_59 + bpps_60 + bpps_61 + bpps_62 + bpps_63 + bpps_64 + bpps_65 + bpps_66 + bpps_67 + bpps_68 + bpps_69 + bpps_70 + bpps_71 + bpps_72 + bpps_73 + bpps_74 + bpps_75 + bpps_76 + bpps_77 + bpps_78 + bpps_79 + bpps_80 + bpps_81 + bpps_82 + bpps_83 + bpps_84 + bpps_85 + bpps_86 + bpps_87 + bpps_88 + bpps_89 + bpps_90 + bpps_91 + bpps_92 + bpps_93 + bpps_94 + bpps_95 + bpps_96 + bpps_97 + bpps_98 + bpps_99 + bpps_100 + bpps_101 + bpps_102 + bpps_103 + bpps_104 + bpps_105 + bpps_106"
+
+### Reactivity
+
+``` r
+formula_model_RF_reactivity <- paste0("reactivity", formula_model_full)
+```
+
+``` r
+#model_RF_reactivity = randomForest(formula = as.formula(formula_model_RF_reactivity),
+#                                   data = data_train,
+#                                   method = "anova",
+#                                   nodesize = 10,
+#                                   ntree=3)
+```
+
+``` r
+#saveRDS(model_RF_reactivity, file = "model_RF_reactivity.rds")
+model_RF_reactivity = readRDS(file = "model_RF_reactivity.rds")
+```
+
+``` r
+summary(model_RF_reactivity)
+```
+
+    ##                 Length Class  Mode     
+    ## call                6  -none- call     
+    ## type                1  -none- character
+    ## predicted       86428  -none- numeric  
+    ## mse                 3  -none- numeric  
+    ## rsq                 3  -none- numeric  
+    ## oob.times       86428  -none- numeric  
+    ## importance        117  -none- numeric  
+    ## importanceSD        0  -none- NULL     
+    ## localImportance     0  -none- NULL     
+    ## proximity           0  -none- NULL     
+    ## ntree               1  -none- numeric  
+    ## mtry                1  -none- numeric  
+    ## forest             11  -none- list     
+    ## coefs               0  -none- NULL     
+    ## y               86428  -none- numeric  
+    ## test                0  -none- NULL     
+    ## inbag               0  -none- NULL     
+    ## terms               3  terms  call
+
+``` r
+y_pred_RF_train = predict(model_RF_reactivity,data_train,type="response")
+error_RF_train <- mean((y_pred_RF_train-data_train$reactivity)^2,na.rm=TRUE)
+print(error_RF_train)
+```
+
+    ## [1] 0.04392455
+
+``` r
+y_pred_RF_val=predict(model_RF_reactivity,data_val,type="response")
+error_RF_val <- mean((y_pred_RF_val-data_val$reactivity)^2,na.rm=TRUE)
+print(error_RF_val)
+```
+
+    ## [1] 0.04248808
+
+``` r
+models_RF <- c(models_RF, "reactivity")
+errors_RF_train <- c(errors_RF_train, error_RF_train)
+errors_RF_val <- c(errors_RF_val, error_RF_val)
+```
+
+### deg\_Mg\_pH10
+
+``` r
+formula_model_RF_deg_Mg_pH10 <- paste0("deg_Mg_pH10", formula_model_full)
+```
+
+``` r
+#model_RF_deg_Mg_pH10 = randomForest(formula = as.formula(formula_model_RF_deg_Mg_pH10),
+#                                    data = data_train,
+#                                    method = "anova",
+#                                    nodesize = 10,
+#                                    ntree=3)
+```
+
+``` r
+#saveRDS(model_RF_deg_Mg_pH10, file = "model_RF_deg_Mg_pH10.rds")
+model_RF_deg_Mg_pH10 = readRDS(file = "model_RF_deg_Mg_pH10.rds")
+```
+
+``` r
+summary(model_RF_deg_Mg_pH10)
+```
+
+    ##                 Length Class  Mode     
+    ## call                6  -none- call     
+    ## type                1  -none- character
+    ## predicted       86428  -none- numeric  
+    ## mse                 3  -none- numeric  
+    ## rsq                 3  -none- numeric  
+    ## oob.times       86428  -none- numeric  
+    ## importance        117  -none- numeric  
+    ## importanceSD        0  -none- NULL     
+    ## localImportance     0  -none- NULL     
+    ## proximity           0  -none- NULL     
+    ## ntree               1  -none- numeric  
+    ## mtry                1  -none- numeric  
+    ## forest             11  -none- list     
+    ## coefs               0  -none- NULL     
+    ## y               86428  -none- numeric  
+    ## test                0  -none- NULL     
+    ## inbag               0  -none- NULL     
+    ## terms               3  terms  call
+
+``` r
+y_pred_RF_train = predict(model_RF_deg_Mg_pH10,data_train,type="response")
+error_RF_train <- mean((y_pred_RF_train-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
+print(error_RF_train)
+```
+
+    ## [1] 0.07044225
+
+``` r
+y_pred_RF_val=predict(model_RF_deg_Mg_pH10,data_val,type="response")
+error_RF_val <- mean((y_pred_RF_val-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
+print(error_RF_val)
+```
+
+    ## [1] 0.07516374
+
+``` r
+models_RF <- c(models_RF, "deg_Mg_pH10")
+errors_RF_train <- c(errors_RF_train, error_RF_train)
+errors_RF_val <- c(errors_RF_val, error_RF_val)
+```
+
+### deg\_pH10
+
+``` r
+formula_model_RF_deg_pH10 <- paste0("deg_pH10", formula_model_full)
+```
+
+``` r
+#model_RF_deg_pH10 = randomForest(formula = as.formula(formula_model_RF_deg_pH10),
+#                                    data = data_train,
+#                                    method = "anova",
+#                                    nodesize = 10,
+#                                    ntree=3)
+```
+
+``` r
+#saveRDS(model_RF_deg_pH10, file = "model_RF_deg_pH10.rds")
+model_RF_deg_pH10 = readRDS(file = "model_RF_deg_pH10.rds")
+```
+
+``` r
+summary(model_RF_deg_pH10)
+```
+
+    ##                 Length Class  Mode     
+    ## call                6  -none- call     
+    ## type                1  -none- character
+    ## predicted       86428  -none- numeric  
+    ## mse                 3  -none- numeric  
+    ## rsq                 3  -none- numeric  
+    ## oob.times       86428  -none- numeric  
+    ## importance        117  -none- numeric  
+    ## importanceSD        0  -none- NULL     
+    ## localImportance     0  -none- NULL     
+    ## proximity           0  -none- NULL     
+    ## ntree               1  -none- numeric  
+    ## mtry                1  -none- numeric  
+    ## forest             11  -none- list     
+    ## coefs               0  -none- NULL     
+    ## y               86428  -none- numeric  
+    ## test                0  -none- NULL     
+    ## inbag               0  -none- NULL     
+    ## terms               3  terms  call
+
+``` r
+y_pred_RF_train = predict(model_RF_deg_pH10,data_train,type="response")
+error_RF_train <- mean((y_pred_RF_train-data_train$deg_pH10)^2,na.rm=TRUE)
+print(error_RF_train)
+```
+
+    ## [1] 0.04204673
+
+``` r
+y_pred_RF_val=predict(model_RF_deg_pH10,data_val,type="response")
+error_RF_val <- mean((y_pred_RF_val-data_val$deg_pH10)^2,na.rm=TRUE)
+print(error_RF_val)
+```
+
+    ## [1] 0.1122844
+
+``` r
+models_RF <- c(models_RF, "deg_pH10")
+errors_RF_train <- c(errors_RF_train, error_RF_train)
+errors_RF_val <- c(errors_RF_val, error_RF_val)
+```
+
+### deg\_Mg\_50C
+
+``` r
+formula_model_RF_deg_Mg_50C <- paste0("deg_Mg_50C", formula_model_full)
+```
+
+``` r
+#model_RF_deg_Mg_50C = randomForest(formula = as.formula(formula_model_RF_deg_Mg_50C),
+#                                    data = data_train,
+#                                    method = "anova",
+#                                    nodesize = 10,
+#                                    ntree=3)
+```
+
+``` r
+#saveRDS(model_RF_deg_Mg_50C, file = "model_RF_deg_Mg_50C.rds")
+model_RF_deg_Mg_50C = readRDS(file = "model_RF_deg_Mg_50C.rds")
+```
+
+``` r
+summary(model_RF_deg_Mg_50C)
+```
+
+    ##                 Length Class  Mode     
+    ## call                6  -none- call     
+    ## type                1  -none- character
+    ## predicted       86428  -none- numeric  
+    ## mse                 3  -none- numeric  
+    ## rsq                 3  -none- numeric  
+    ## oob.times       86428  -none- numeric  
+    ## importance        117  -none- numeric  
+    ## importanceSD        0  -none- NULL     
+    ## localImportance     0  -none- NULL     
+    ## proximity           0  -none- NULL     
+    ## ntree               1  -none- numeric  
+    ## mtry                1  -none- numeric  
+    ## forest             11  -none- list     
+    ## coefs               0  -none- NULL     
+    ## y               86428  -none- numeric  
+    ## test                0  -none- NULL     
+    ## inbag               0  -none- NULL     
+    ## terms               3  terms  call
+
+``` r
+y_pred_RF_train = predict(model_RF_deg_Mg_50C,data_train,type="response")
+error_RF_train <- mean((y_pred_RF_train-data_train$deg_Mg_50C)^2,na.rm=TRUE)
+print(error_RF_train)
+```
+
+    ## [1] 0.04039788
+
+``` r
+y_pred_RF_val=predict(model_RF_deg_Mg_50C,data_val,type="response")
+error_RF_val <- mean((y_pred_RF_val-data_val$deg_Mg_50C)^2,na.rm=TRUE)
+print(error_RF_val)
+```
+
+    ## [1] 0.109544
+
+``` r
+models_RF <- c(models_RF, "deg_Mg_50C")
+errors_RF_train <- c(errors_RF_train, error_RF_train)
+errors_RF_val <- c(errors_RF_val, error_RF_val)
+```
+
+### deg\_50C
+
+``` r
+formula_model_RF_deg_50C <- paste0("deg_50C", formula_model_full)
+```
+
+``` r
+#model_RF_deg_50C = randomForest(formula = as.formula(formula_model_RF_deg_50C),
+#                                data = data_train,
+#                                method = "anova",
+#                                nodesize = 10,
+#                                ntree=3)
+```
+
+``` r
+#saveRDS(model_RF_deg_50C, file = "model_RF_deg_50C.rds")
+model_RF_deg_50C = readRDS(file = "model_RF_deg_50C.rds")
+```
+
+``` r
+summary(model_RF_deg_Mg_50C)
+```
+
+    ##                 Length Class  Mode     
+    ## call                6  -none- call     
+    ## type                1  -none- character
+    ## predicted       86428  -none- numeric  
+    ## mse                 3  -none- numeric  
+    ## rsq                 3  -none- numeric  
+    ## oob.times       86428  -none- numeric  
+    ## importance        117  -none- numeric  
+    ## importanceSD        0  -none- NULL     
+    ## localImportance     0  -none- NULL     
+    ## proximity           0  -none- NULL     
+    ## ntree               1  -none- numeric  
+    ## mtry                1  -none- numeric  
+    ## forest             11  -none- list     
+    ## coefs               0  -none- NULL     
+    ## y               86428  -none- numeric  
+    ## test                0  -none- NULL     
+    ## inbag               0  -none- NULL     
+    ## terms               3  terms  call
+
+``` r
+y_pred_RF_train = predict(model_RF_deg_50C,data_train,type="response")
+error_RF_train <- mean((y_pred_RF_train-data_train$deg_50C)^2,na.rm=TRUE)
+print(error_RF_train)
+```
+
+    ## [1] 0.03075743
+
+``` r
+y_pred_RF_val=predict(model_RF_deg_50C,data_val,type="response")
+error_RF_val <- mean((y_pred_RF_val-data_val$deg_50C)^2,na.rm=TRUE)
+print(error_RF_val)
+```
+
+    ## [1] 0.08495423
+
+``` r
+models_RF <- c(models_RF, "deg_50C")
+errors_RF_train <- c(errors_RF_train, error_RF_train)
+errors_RF_val <- c(errors_RF_val, error_RF_val)
+```
+
+### Récapitulatif des résultats
+
+``` r
+models_RF_df <- data.frame(models_RF, errors_RF_train, errors_RF_val)
+```
+
+``` r
+models_RF_df
+```
+
+    ##     models_RF errors_RF_train errors_RF_val
+    ## 1  reactivity      0.04392455    0.04248808
+    ## 2 deg_Mg_pH10      0.07044225    0.07516374
+    ## 3    deg_pH10      0.04204673    0.11228436
+    ## 4  deg_Mg_50C      0.04039788    0.10954402
+    ## 5     deg_50C      0.03075743    0.08495423
+
 <a id="soumission2"></a>
 
 # Soumission Random Forest
+
+``` r
+##data_test=read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_test.csv")
+#data_test = read.csv("data_test.csv")
+```
+
+``` r
+#data_test = data_test[,-1] %>% mutate(sequence = as.factor(sequence)) %>% 
+#  mutate(seq_be = as.factor(seq_be)) %>% 
+#  mutate(seq_af = as.factor(seq_af)) %>% 
+#  mutate(structure = as.factor(structure)) %>% 
+#  mutate(predicted_loop_type = as.factor(predicted_loop_type))
+```
+
+``` r
+##y_test_pred=read.csv(file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
+
+#y_test_pred = read.csv(file = "sample_submission.csv")
+```
+
+``` r
+#model_reactivity = readRDS("model_RF_reactivity.rds")
+#model_deg_Mg_pH10 = readRDS("model_RF_deg_Mg_pH10.rds")
+#model_deg_pH10 = readRDS("model_RF_deg_pH10.rds")
+#model_deg_Mg_50C = readRDS("model_RF_deg_Mg_50C.rds")
+#model_deg_50C = readRDS("model_RF_deg_50C.rds")
+```
+
+``` r
+#y_test_pred = y_test_pred %>%
+#  mutate(reactivity = predict(model_reactivity, data_test, type="response")) %>%
+#  mutate(deg_Mg_pH10 = predict(model_deg_Mg_pH10, data_test, type="response")) %>%
+#  mutate(deg_pH10 = predict(model_deg_pH10, data_test, type="response")) %>%
+#  mutate(deg_Mg_50C = predict(model_deg_Mg_50C, data_test, type="response")) %>%
+#  mutate(deg_50C = predict(model_deg_50C, data_test, type="response")) %>%
+#  mutate_all(unlist)
+```
+
+``` r
+#save(y_test_pred, file = "sample_submission_RF.Rda")
+```
+
+``` r
+#load(file = "sample_submission_RF.Rda")
+```
+
+``` r
+#head(y_test_pred)
+```
+
+``` r
+#fwrite(y_test_pred, "sample_submission_RF.csv")
+```

@@ -1471,6 +1471,9 @@ rm(model_gamma_deg_50C_pen_enet, model_gamma_deg_50C_pen_ridge,
 
 ```{r, echo = FALSE}
 rm(list = ls())
+# source("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/projet_fct.R")
+source("C:/Users/Startklar/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/projet_fct.R")
+# source("./projet_fct.R")
 ```
 
 Chargement du jeu de données.
@@ -1508,7 +1511,7 @@ data=data[data$SN_filter==1,]
 rownames(data)=NULL
 ```
 
-# Création de la base train/validation
+## Création de la base train/validation
 
 ```{r}
 tamp=train_test_split(data)
@@ -1527,8 +1530,8 @@ sum(is.na(data_val))
 dim(data_train)[1]+dim(data_val)[1]-dim(data)[1]
 ```
 
-```{r}
-#rm(tamp,data)
+```{r, echo = FALSE}
+rm(tamp)
 ```
 
 
@@ -1561,16 +1564,16 @@ formula_model_RF_reactivity <- paste0("reactivity", formula_model_full)
 ```
 
 ```{r}
-model_RF_reactivity = randomForest(formula = as.formula(formula_model_RF_reactivity),
-                                   data = data_train,
-                                   method = "anova",
-                                   nodesize = 10,
-                                   ntree=3)
+#model_RF_reactivity = randomForest(formula = as.formula(formula_model_RF_reactivity),
+#                                   data = data_train,
+#                                   method = "anova",
+#                                   nodesize = 10,
+#                                   ntree=3)
 ```
 
 ```{r}
-saveRDS(model_RF_reactivity, file = "model_RF_reactivity.rds")
-readRDS(file = "model_RF_reactivity.rds")
+#saveRDS(model_RF_reactivity, file = "model_RF_reactivity.rds")
+model_RF_reactivity = readRDS(file = "model_RF_reactivity.rds")
 ```
 
 ```{r}
@@ -1600,16 +1603,16 @@ formula_model_RF_deg_Mg_pH10 <- paste0("deg_Mg_pH10", formula_model_full)
 ```
 
 ```{r}
-model_RF_deg_Mg_pH10 = randomForest(formula = as.formula(formula_model_RF_deg_Mg_pH10),
-                                    data = data_train,
-                                    method = "anova",
-                                    nodesize = 10,
-                                    ntree=3)
+#model_RF_deg_Mg_pH10 = randomForest(formula = as.formula(formula_model_RF_deg_Mg_pH10),
+#                                    data = data_train,
+#                                    method = "anova",
+#                                    nodesize = 10,
+#                                    ntree=3)
 ```
 
 ```{r}
-saveRDS(model_RF_deg_Mg_pH10, file = "model_RF_deg_Mg_pH10.rds")
-readRDS(file = "model_RF_deg_Mg_pH10.rds")
+#saveRDS(model_RF_deg_Mg_pH10, file = "model_RF_deg_Mg_pH10.rds")
+model_RF_deg_Mg_pH10 = readRDS(file = "model_RF_deg_Mg_pH10.rds")
 ```
 
 ```{r}
@@ -1639,16 +1642,16 @@ formula_model_RF_deg_pH10 <- paste0("deg_pH10", formula_model_full)
 ```
 
 ```{r}
-model_RF_deg_pH10 = randomForest(formula = as.formula(formula_model_RF_deg_pH10),
-                                    data = data_train,
-                                    method = "anova",
-                                    nodesize = 10,
-                                    ntree=3)
+#model_RF_deg_pH10 = randomForest(formula = as.formula(formula_model_RF_deg_pH10),
+#                                    data = data_train,
+#                                    method = "anova",
+#                                    nodesize = 10,
+#                                    ntree=3)
 ```
 
 ```{r}
-saveRDS(model_RF_deg_pH10, file = "model_RF_deg_pH10.rds")
-readRDS(file = "model_RF_deg_pH10.rds")
+#saveRDS(model_RF_deg_pH10, file = "model_RF_deg_pH10.rds")
+model_RF_deg_pH10 = readRDS(file = "model_RF_deg_pH10.rds")
 ```
 
 ```{r}
@@ -1678,16 +1681,16 @@ formula_model_RF_deg_Mg_50C <- paste0("deg_Mg_50C", formula_model_full)
 ```
 
 ```{r}
-model_RF_deg_Mg_50C = randomForest(formula = as.formula(formula_model_RF_deg_Mg_50C),
-                                    data = data_train,
-                                    method = "anova",
-                                    nodesize = 10,
-                                    ntree=3)
+#model_RF_deg_Mg_50C = randomForest(formula = as.formula(formula_model_RF_deg_Mg_50C),
+#                                    data = data_train,
+#                                    method = "anova",
+#                                    nodesize = 10,
+#                                    ntree=3)
 ```
 
 ```{r}
 #saveRDS(model_RF_deg_Mg_50C, file = "model_RF_deg_Mg_50C.rds")
-readRDS(file = "model_RF_deg_Mg_50C.rds")
+model_RF_deg_Mg_50C = readRDS(file = "model_RF_deg_Mg_50C.rds")
 ```
 
 ```{r}
@@ -1717,16 +1720,16 @@ formula_model_RF_deg_50C <- paste0("deg_50C", formula_model_full)
 ```
 
 ```{r}
-model_RF_deg_50C = randomForest(formula = as.formula(formula_model_RF_deg_50C),
-                                data = data_train,
-                                method = "anova",
-                                nodesize = 10,
-                                ntree=3)
+#model_RF_deg_50C = randomForest(formula = as.formula(formula_model_RF_deg_50C),
+#                                data = data_train,
+#                                method = "anova",
+#                                nodesize = 10,
+#                                ntree=3)
 ```
 
 ```{r}
-saveRDS(model_RF_deg_50C, file = "model_RF_deg_50C.rds")
-readRDS(file = "model_RF_deg_50C.rds")
+#saveRDS(model_RF_deg_50C, file = "model_RF_deg_50C.rds")
+model_RF_deg_50C = readRDS(file = "model_RF_deg_50C.rds")
 ```
 
 ```{r}
@@ -1751,6 +1754,10 @@ errors_RF_val <- c(errors_RF_val, error_RF_val)
 
 ### Récapitulatif des résultats
 
+```{r, echo = FALSE}
+rm(y_pred_RF_train, y_pred_RF_val)
+```
+
 ```{r}
 models_RF_df <- data.frame(models_RF, errors_RF_train, errors_RF_val)
 ```
@@ -1763,4 +1770,56 @@ models_RF_df
 
 # Soumission Random Forest
 
+```{r}
+##data_test=read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_test.csv")
+#data_test = read.csv("data_test.csv")
+```
+
+```{r}
+#data_test = data_test[,-1] %>% mutate(sequence = as.factor(sequence)) %>% 
+#  mutate(seq_be = as.factor(seq_be)) %>% 
+#  mutate(seq_af = as.factor(seq_af)) %>% 
+#  mutate(structure = as.factor(structure)) %>% 
+#  mutate(predicted_loop_type = as.factor(predicted_loop_type))
+```
+
+```{r}
+##y_test_pred=read.csv(file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
+
+#y_test_pred = read.csv(file = "sample_submission.csv")
+```
+
+```{r}
+#model_reactivity = readRDS("model_RF_reactivity.rds")
+#model_deg_Mg_pH10 = readRDS("model_RF_deg_Mg_pH10.rds")
+#model_deg_pH10 = readRDS("model_RF_deg_pH10.rds")
+#model_deg_Mg_50C = readRDS("model_RF_deg_Mg_50C.rds")
+#model_deg_50C = readRDS("model_RF_deg_50C.rds")
+```
+
+```{r}
+#y_test_pred = y_test_pred %>%
+#  mutate(reactivity = predict(model_reactivity, data_test, type="response")) %>%
+#  mutate(deg_Mg_pH10 = predict(model_deg_Mg_pH10, data_test, type="response")) %>%
+#  mutate(deg_pH10 = predict(model_deg_pH10, data_test, type="response")) %>%
+#  mutate(deg_Mg_50C = predict(model_deg_Mg_50C, data_test, type="response")) %>%
+#  mutate(deg_50C = predict(model_deg_50C, data_test, type="response")) %>%
+#  mutate_all(unlist)
+```
+
+```{r}
+#save(y_test_pred, file = "sample_submission_RF.Rda")
+```
+
+```{r}
+#load(file = "sample_submission_RF.Rda")
+```
+
+```{r}
+#head(y_test_pred)
+```
+
+```{r}
+#fwrite(y_test_pred, "sample_submission_RF.csv")
+```
 
