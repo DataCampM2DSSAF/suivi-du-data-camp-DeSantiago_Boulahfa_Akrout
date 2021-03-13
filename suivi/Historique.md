@@ -113,3 +113,7 @@ Ecriture d'un fichier csv pour une soumission utilisant les modèles GLM avec p�
 Jawad -> Modèles Random Forest: après correction des erreurs de syntaxe sur les modèles GLM, il s'avère que la démarche consistant à utiliser les modèles GLM avec pénalisation lasso pour sélectionner les BPPS n'est plus pertinente.
 Mise à jour du Readme avec les premiers modèles Random Forest.
 Ecriture d'un fichier csv pour une soumission utilisant les premiers modèles Random Forest.
+
+**Samedi 13 Mars**:
+
+Jawad -> Modèles Random Forest: entrainement de modèles avec 20 arbres au lieu de 3. Correction d'erreurs dans les soumissions (il fallait réentrainer les modèles en incorporant le jeu de données de validation avant d'effectuer les prédictions sur le test).
