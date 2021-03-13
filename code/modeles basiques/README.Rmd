@@ -1564,11 +1564,8 @@ formula_model_RF_reactivity <- paste0("reactivity", formula_model_full)
 ```
 
 ```{r}
-#model_RF_reactivity = randomForest(formula = as.formula(formula_model_RF_reactivity),
-#                                   data = data_train,
-#                                   method = "anova",
-#                                   nodesize = 10,
-#                                   ntree=3)
+#model_RF_reactivity = randomForest(x = data_train[, 2:118], y = data_train$reactivity,
+#                                   ntree=20, do.trace = 1)
 ```
 
 ```{r}
@@ -1603,11 +1600,8 @@ formula_model_RF_deg_Mg_pH10 <- paste0("deg_Mg_pH10", formula_model_full)
 ```
 
 ```{r}
-#model_RF_deg_Mg_pH10 = randomForest(formula = as.formula(formula_model_RF_deg_Mg_pH10),
-#                                    data = data_train,
-#                                    method = "anova",
-#                                    nodesize = 10,
-#                                    ntree=3)
+#model_RF_deg_Mg_pH10 = randomForest(x = data_train[, 2:118], y = data_train$deg_Mg_pH10,
+#                                 ntree=20, do.trace = 1)
 ```
 
 ```{r}
@@ -1642,11 +1636,8 @@ formula_model_RF_deg_pH10 <- paste0("deg_pH10", formula_model_full)
 ```
 
 ```{r}
-#model_RF_deg_pH10 = randomForest(formula = as.formula(formula_model_RF_deg_pH10),
-#                                    data = data_train,
-#                                    method = "anova",
-#                                    nodesize = 10,
-#                                    ntree=3)
+#model_RF_deg_pH10 = randomForest(x = data_train[, 2:118], y = data_train$deg_pH10,
+#                                 ntree=20, do.trace = 1)
 ```
 
 ```{r}
@@ -1681,11 +1672,8 @@ formula_model_RF_deg_Mg_50C <- paste0("deg_Mg_50C", formula_model_full)
 ```
 
 ```{r}
-#model_RF_deg_Mg_50C = randomForest(formula = as.formula(formula_model_RF_deg_Mg_50C),
-#                                    data = data_train,
-#                                    method = "anova",
-#                                    nodesize = 10,
-#                                    ntree=3)
+#model_RF_deg_Mg_50C = randomForest(x = data_train[, 2:118], y = data_train$deg_Mg_50C,
+#                                   ntree=20, do.trace = 1)
 ```
 
 ```{r}
@@ -1720,11 +1708,8 @@ formula_model_RF_deg_50C <- paste0("deg_50C", formula_model_full)
 ```
 
 ```{r}
-#model_RF_deg_50C = randomForest(formula = as.formula(formula_model_RF_deg_50C),
-#                                data = data_train,
-#                                method = "anova",
-#                                nodesize = 10,
-#                                ntree=3)
+#model_RF_deg_50C = randomForest(x = data_train[, 2:118], y = data_train$deg_50C,
+#                                ntree=20, do.trace = 1)
 ```
 
 ```{r}
@@ -1789,6 +1774,8 @@ models_RF_df
 #y_test_pred = read.csv(file = "sample_submission.csv")
 ```
 
+
+A CORRIGER: soumissions à faire en entrainant les modèles sur toutes les données, pas que data_train...
 ```{r}
 #model_reactivity = readRDS("model_RF_reactivity.rds")
 #model_deg_Mg_pH10 = readRDS("model_RF_deg_Mg_pH10.rds")
