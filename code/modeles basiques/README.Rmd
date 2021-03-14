@@ -369,7 +369,7 @@ On choisit $\alpha$ qui minimise le MSE sur la validation.
 #                  y_true_val = data_val$reactivity)
 ```
 
-On trouve $\alpha = 0.8$.
+On trouve $\alpha = 0.6$.
 ```{r}
 #print(alpha_opti_enet_gamma_reactivity)
 ```
@@ -1259,7 +1259,7 @@ On choisit $\alpha$ qui minimise le MSE sur la validation.
 #                  y_true_val = data_val$deg_50C)
 ```
 
-On trouve $\alpha = 0.8$.
+On trouve $\alpha = 0.9$.
 ```{r}
 #print(alpha_opti_enet_gamma_deg_50C)
 ```
@@ -1330,30 +1330,37 @@ rm(model_gamma_deg_50C_pen_enet, model_gamma_deg_50C_pen_ridge,
    model_gamma_deg_50C_pen_lasso, model_gamma_deg_50C)
 ```
 
-```{r, echo = FALSE}
-#save.image(file = "GLM_optimization_final_version.Rdata")
-```
-
-```{r, echo = FALSE}
-#rm(list = ls())
-#load(file = "GLM_optimization_final_version.Rdata")
-```
-
-
 <a id="soumission1"></a>
 
 # Soumission GLM
 
-```{r, echo = FALSE}
-#rm(model_gamma_reactivity, model_gamma_reactivity_pen_ridge, model_gamma_reactivity_pen_enet,
-#   model_gamma_deg_Mg_pH10, model_gamma_deg_Mg_pH10_pen_ridge, model_gamma_deg_Mg_pH10_pen_enet,
-#   model_gamma_deg_pH10, model_gamma_deg_pH10_pen_ridge, model_gamma_deg_pH10_pen_enet,
-#   model_gamma_deg_Mg_50C, model_gamma_deg_Mg_50C_pen_ridge, model_gamma_deg_Mg_50C_pen_enet,
-#   model_gamma_deg_50C, model_gamma_deg_50C_pen_ridge, model_gamma_deg_50C_pen_enet)
+```{r}
+#alpha_enet_df <- data.frame(reactivity = alpha_opti_enet_gamma_reactivity,
+#                            deg_Mg_pH10 = alpha_opti_enet_gamma_deg_Mg_pH10,
+#                            deg_pH10 = alpha_opti_enet_gamma_deg_pH10,
+#                            deg_Mg_50C = alpha_opti_enet_gamma_deg_Mg_50C,
+#                            deg_50C = alpha_opti_enet_gamma_deg_50C)
 ```
 
-```{r, echo = FALSE}
-#rm(data_train_pen, data_val_pen)
+```{r}
+#alpha_enet_df
+```
+
+```{r}
+##save(alpha_enet_df, file = "alpha_enet_df.Rda")
+load(file = "alpha_enet_df.Rda")
+```
+
+```{r}
+alpha_opti_enet_gamma_reactivity <- alpha_enet_df$reactivity
+  
+alpha_opti_enet_gamma_deg_Mg_pH10 <- alpha_enet_df$deg_Mg_pH10
+  
+alpha_opti_enet_gamma_deg_pH10 <- alpha_enet_df$deg_pH10
+  
+alpha_opti_enet_gamma_deg_Mg_50C <- alpha_enet_df$deg_Mg_50C
+  
+alpha_opti_enet_gamma_deg_50C <- alpha_enet_df$deg_50C
 ```
 
 ```{r}
@@ -1402,7 +1409,67 @@ rm(model_gamma_deg_50C_pen_enet, model_gamma_deg_50C_pen_ridge,
 ```
 
 ```{r}
-# Pour faire la matrice de design du test
+## Pour faire la matrice de design du train
+
+#model_gamma_reactivity_train = glm(formula = formula_gamma_reactivity,
+#                               family = Gamma(link = "log"), data = data)
+#data_pen_reactivity = model.matrix(model_gamma_reactivity_train)
+#
+#model_gamma_deg_Mg_pH10_train = glm(formula = formula_gamma_deg_Mg_pH10,
+#                               family = Gamma(link = "log"), data = data)
+#data_pen_deg_Mg_pH10 = model.matrix(model_gamma_deg_Mg_pH10_train)
+#
+#model_gamma_deg_pH10_train = glm(formula = formula_gamma_deg_pH10,
+#                               family = Gamma(link = "log"), data = data)
+#data_pen_deg_pH10 = model.matrix(model_gamma_deg_pH10_train)
+#
+#model_gamma_deg_Mg_50C_train = glm(formula = formula_gamma_deg_Mg_50C,
+#                                  family = Gamma(link = "log"), data = data)
+#data_pen_deg_Mg_50C = model.matrix(model_gamma_deg_Mg_50C_train)
+#
+#model_gamma_deg_50C_train = glm(formula = formula_gamma_deg_50C,
+#                               family = Gamma(link = "log"), data = data)
+#data_pen_deg_50C = model.matrix(model_gamma_deg_50C_train)
+```
+
+```{r, echo = FALSE}
+## On supprime les modèles sur le train
+#rm(model_gamma_reactivity_train, model_gamma_deg_Mg_pH10_train,
+#   model_gamma_deg_pH10_train, model_gamma_deg_Mg_50C_train,
+#   model_gamma_deg_50C_train)
+```
+
+```{r}
+#model_reactivity = update(object = model_reactivity,
+#                          x = data_pen_reactivity, y = data$reactivity)
+#model_deg_Mg_pH10 = update(object = model_deg_Mg_pH10,
+#                           x = data_pen_deg_Mg_pH10, y = data$deg_Mg_pH10)
+#model_deg_pH10 = update(object = model_deg_pH10,
+#                        x = data_pen_deg_pH10, y = data$deg_pH10)
+#model_deg_Mg_50C = update(object = model_deg_Mg_50C,
+#                          x = data_pen_deg_Mg_50C, y = data$deg_Mg_50C)
+#model_deg_50C = update(object = model_deg_50C,
+#                       x = data_pen_deg_50C, y = data$deg_50C)
+```
+
+```{r}
+#saveRDS(model_reactivity, file = "model_reactivity.rds")
+#saveRDS(model_deg_Mg_pH10, file = "model_deg_Mg_pH10.rds")
+#saveRDS(model_deg_pH10, file = "model_deg_pH10.rds")
+#saveRDS(model_deg_Mg_50C, file = "model_deg_Mg_50C.rds")
+#saveRDS(model_deg_50C, file = "model_deg_50C.rds")
+```
+
+```{r}
+#model_reactivity = readRDS("model_reactivity.rds")
+#model_deg_Mg_pH10 = readRDS("model_deg_Mg_pH10.rds")
+#model_deg_pH10 = readRDS("model_deg_pH10.rds")
+#model_deg_Mg_50C = readRDS("model_deg_Mg_50C.rds")
+#model_deg_50C = readRDS("model_deg_50C.rds")
+```
+
+```{r}
+## Pour faire la matrice de design du test
 
 #model_gamma_reactivity_test = glm(formula = formula_gamma_reactivity,
 #                               family = Gamma(link = "log"), data = data_test)
@@ -1426,14 +1493,14 @@ rm(model_gamma_deg_50C_pen_enet, model_gamma_deg_50C_pen_ridge,
 ```
 
 ```{r}
-# On supprime les modèles sur le test
+## On supprime les modèles sur le test
 #rm(model_gamma_reactivity_test, model_gamma_deg_Mg_pH10_test,
 #   model_gamma_deg_pH10_test, model_gamma_deg_Mg_50C_test,
 #   model_gamma_deg_50C_test)
 ```
 
 ```{r}
-# ATTENTION: nos modèles prédisent les labels translatés, donc il faut revenir aux labels initiaux en retirant la translation (on a stocké l'opposé de la translation de chaque label dans translation_labels, d'où le "+" au lieu du "-")
+## ATTENTION: nos modèles prédisent les labels translatés, donc il faut revenir aux labels initiaux en retirant la translation (on a stocké l'opposé de la translation de chaque label dans translation_labels, d'où le "+" au lieu du "-")
 
 #y_test_pred = y_test_pred %>%
 #  mutate(reactivity = predict(model_reactivity, data_test_pen_reactivity,
@@ -1755,43 +1822,77 @@ models_RF_df
 
 # Soumission Random Forest
 
-```{r}
-##data_test=read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_test.csv")
-#data_test = read.csv("data_test.csv")
+```{r, echo=FALSE}
+rm(data_test)
 ```
 
 ```{r}
-#data_test = data_test[,-1] %>% mutate(sequence = as.factor(sequence)) %>% 
-#  mutate(seq_be = as.factor(seq_be)) %>% 
-#  mutate(seq_af = as.factor(seq_af)) %>% 
-#  mutate(structure = as.factor(structure)) %>% 
-#  mutate(predicted_loop_type = as.factor(predicted_loop_type))
+#data_test=read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_test.csv")
+data_test = read.csv("data_test.csv")
 ```
 
 ```{r}
-##y_test_pred=read.csv(file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
-
-#y_test_pred = read.csv(file = "sample_submission.csv")
-```
-
-
-A CORRIGER: soumissions à faire en entrainant les modèles sur toutes les données, pas que data_train...
-```{r}
-#model_reactivity = readRDS("model_RF_reactivity.rds")
-#model_deg_Mg_pH10 = readRDS("model_RF_deg_Mg_pH10.rds")
-#model_deg_pH10 = readRDS("model_RF_deg_pH10.rds")
-#model_deg_Mg_50C = readRDS("model_RF_deg_Mg_50C.rds")
-#model_deg_50C = readRDS("model_RF_deg_50C.rds")
+data_test = data_test[,-1] %>% mutate(sequence = as.factor(sequence)) %>% 
+  mutate(seq_be = as.factor(seq_be)) %>% 
+  mutate(seq_af = as.factor(seq_af)) %>% 
+  mutate(structure = as.factor(structure)) %>% 
+  mutate(predicted_loop_type = as.factor(predicted_loop_type))
 ```
 
 ```{r}
-#y_test_pred = y_test_pred %>%
-#  mutate(reactivity = predict(model_reactivity, data_test, type="response")) %>%
-#  mutate(deg_Mg_pH10 = predict(model_deg_Mg_pH10, data_test, type="response")) %>%
-#  mutate(deg_pH10 = predict(model_deg_pH10, data_test, type="response")) %>%
-#  mutate(deg_Mg_50C = predict(model_deg_Mg_50C, data_test, type="response")) %>%
-#  mutate(deg_50C = predict(model_deg_50C, data_test, type="response")) %>%
-#  mutate_all(unlist)
+##y_test_pred=read.csv(
+##  file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
+
+y_test_pred = read.csv(file = "sample_submission.csv")
+```
+
+```{r}
+#model_RF_reactivity = readRDS("model_RF_reactivity.rds")
+#model_RF_deg_Mg_pH10 = readRDS("model_RF_deg_Mg_pH10.rds")
+#model_RF_deg_pH10 = readRDS("model_RF_deg_pH10.rds")
+#model_RF_deg_Mg_50C = readRDS("model_RF_deg_Mg_50C.rds")
+#model_RF_deg_50C = readRDS("model_RF_deg_50C.rds")
+```
+
+On réentraine les modèles en incorporant le jeu de données de validation.
+```{r}
+model_RF_reactivity = update(object = model_RF_reactivity,
+                             x = data[, 2:118],
+                             y = data$reactivity)
+```
+
+```{r}
+model_RF_deg_Mg_pH10 = update(object = model_RF_deg_Mg_pH10,
+                              x = (rbind(data_train, data_val))[, 2:118],
+                              y = (rbind(data_train, data_val))$deg_Mg_pH10)
+```
+
+```{r}
+model_RF_deg_pH10 = update(object = model_RF_deg_pH10,
+                           x = (rbind(data_train, data_val))[, 2:118],
+                           y = (rbind(data_train, data_val))$deg_pH10)
+```
+
+```{r}
+model_RF_deg_Mg_50C = update(object = model_RF_deg_Mg_50C,
+                             x = (rbind(data_train, data_val))[, 2:118],
+                             y = (rbind(data_train, data_val))$deg_Mg_50C)
+```
+
+```{r}
+model_RF_deg_50C = update(object = model_RF_deg_50C,
+                          x = (rbind(data_train, data_val))[, 2:118],
+                          y = (rbind(data_train, data_val))$deg_50C)
+```
+
+```{r}
+y_test_pred = y_test_pred %>%
+  mutate(reactivity = predict(model_RF_reactivity, data_test, type="response")) %>%
+  mutate(deg_Mg_pH10 = predict(model_RF_deg_Mg_pH10, data_test, type="response")) %>%
+  mutate(deg_pH10 = predict(model_RF_deg_pH10, data_test, type="response")) %>%
+  mutate(deg_Mg_50C = predict(model_RF_deg_Mg_50C, data_test, type="response")) %>%
+  mutate(deg_50C = predict(model_RF_deg_50C, data_test, type="response")) %>%
+  mutate_all(unlist)
 ```
 
 ```{r}
