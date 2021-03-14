@@ -117,3 +117,7 @@ Ecriture d'un fichier csv pour une soumission utilisant les premiers modèles Ra
 **Samedi 13 Mars**:
 
 Jawad -> Modèles Random Forest: entrainement de modèles avec 20 arbres au lieu de 3. Correction d'erreurs dans les soumissions (il fallait réentrainer les modèles en incorporant le jeu de données de validation avant d'effectuer les prédictions sur le test).
+
+**Dimanche 14 Mars**:
+
+Jawad -> Modèles GLM: écriture d'un fichier csv pour une soumission utilisant les modèles GLM optimisés et réentrainés en ajoutant les données de validation.
