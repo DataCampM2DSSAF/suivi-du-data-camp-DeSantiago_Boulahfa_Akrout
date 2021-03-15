@@ -9,9 +9,9 @@
 
 ### 7 mars 2021
 
-> [Réorganisation des données](#data1)
+> [Premier chargement des données](#data1)
 
-> [Séparation train/validation](#split)
+> [Séparation train/validation](#split1)
 
 > [GLM: loi Gamma](#glm)
 
@@ -19,13 +19,15 @@
 
 > [Second chargement des données](#data2)
 
+> [Séparation train/validation](#split2)
+
 > [Random Forest](#rf)
 
 > [Soumission Random Forest](#soumission2)
 
 <a id="data1"></a>
 
-# Réorganisation des données
+# Premier chargement des données
 
 Chargement du jeu de données.
 
@@ -400,7 +402,7 @@ translation_labels
     ##   reactivity deg_Mg_pH10 deg_pH10 deg_Mg_50C deg_50C
     ## 1    -0.3851     -0.2853  -0.4997    -0.4982 -0.4965
 
-<a id="split"></a>
+<a id="split1"></a>
 
 # Séparation train/validation
 
@@ -1178,7 +1180,7 @@ On choisit \(\alpha\) qui minimise le MSE sur la validation.
 #                  y_true_val = data_val$reactivity)
 ```
 
-On trouve \(\alpha = 0.8\).
+On trouve \(\alpha = 0.6\).
 
 ``` r
 #print(alpha_opti_enet_gamma_reactivity)
@@ -1211,155 +1213,155 @@ coef(model_gamma_reactivity_pen_enet, s = "lambda.min")
 
     ## 149 x 1 sparse Matrix of class "dgCMatrix"
     ##                                  1
-    ## (Intercept)           1.2450601195
+    ## (Intercept)           1.2338250073
     ## (Intercept)           .           
-    ## sequenceC            -0.1209893905
-    ## sequenceG             0.0337615060
-    ## sequenceU             0.0314995380
-    ## index_sequence       -0.0050575310
-    ## structure)            0.0743060383
-    ## structure.            0.0498297724
-    ## predicted_loop_typeE -0.1593885784
-    ## predicted_loop_typeH -0.0983368341
-    ## predicted_loop_typeI -0.2260432758
-    ## predicted_loop_typeM -0.1315558803
-    ## predicted_loop_typeS -0.1368545547
-    ## predicted_loop_typeX -0.1411598833
-    ## seq_beC               0.0029691724
-    ## seq_beG               0.0853221995
-    ## seq_beO              -0.0355671065
-    ## seq_beU               0.0683836503
-    ## seq_afC              -0.2195739051
-    ## seq_afG              -0.2377455170
-    ## seq_afO               .           
-    ## seq_afU               0.0417926443
-    ## struct_be)            0.0097794934
-    ## struct_be.            0.0576473301
-    ## struct_beO            .           
-    ## struct_af)            0.0527375226
-    ## struct_af.            0.1227717906
-    ## struct_afO            .           
-    ## loop_type_beE        -0.0436332068
-    ## loop_type_beH        -0.0577367871
-    ## loop_type_beI        -0.0052517944
-    ## loop_type_beM         0.0088152856
-    ## loop_type_beO        -0.0010870854
-    ## loop_type_beS        -0.0001151405
-    ## loop_type_beX         0.0075592011
-    ## loop_type_afE        -0.0204833725
-    ## loop_type_afH         0.0636076118
-    ## loop_type_afI        -0.0553833372
-    ## loop_type_afM        -0.0132986633
-    ## loop_type_afO        -0.0731139397
-    ## loop_type_afS        -0.0007852596
-    ## loop_type_afX        -0.0093770963
-    ## bpps_0               -1.2827650036
-    ## bpps_1               -0.8570574601
-    ## bpps_2               -0.2821064285
-    ## bpps_3               -0.8925935443
-    ## bpps_4               -0.4927235134
-    ## bpps_5               -0.3566618658
-    ## bpps_6               -0.3714997168
-    ## bpps_7               -0.3971546088
-    ## bpps_8               -0.3928168703
-    ## bpps_9               -0.4641148893
-    ## bpps_10              -0.4595618257
-    ## bpps_11              -0.4690138931
-    ## bpps_12              -0.4597765249
-    ## bpps_13              -0.4580379813
-    ## bpps_14              -0.4759848495
-    ## bpps_15              -0.4478100371
-    ## bpps_16              -0.4380946367
-    ## bpps_17              -0.4617401024
-    ## bpps_18              -0.4346115709
-    ## bpps_19              -0.4593597110
-    ## bpps_20              -0.4888124075
-    ## bpps_21              -0.4809459551
-    ## bpps_22              -0.4968512061
-    ## bpps_23              -0.4555195003
-    ## bpps_24              -0.4344719246
-    ## bpps_25              -0.4542647792
-    ## bpps_26              -0.4490571156
-    ## bpps_27              -0.4353059120
-    ## bpps_28              -0.4517820345
-    ## bpps_29              -0.4927897061
-    ## bpps_30              -0.4861042933
-    ## bpps_31              -0.4556607429
-    ## bpps_32              -0.4566134008
-    ## bpps_33              -0.4832287611
-    ## bpps_34              -0.4169240481
-    ## bpps_35              -0.4279375267
-    ## bpps_36              -0.3781637676
-    ## bpps_37              -0.3601130069
-    ## bpps_38              -0.4031046462
-    ## bpps_39              -0.3808024376
-    ## bpps_40              -0.4062479501
-    ## bpps_41              -0.4437724553
-    ## bpps_42              -0.4373531372
-    ## bpps_43              -0.4228300712
-    ## bpps_44              -0.4243987500
-    ## bpps_45              -0.4265022232
-    ## bpps_46              -0.4006174606
-    ## bpps_47              -0.4212344861
-    ## bpps_48              -0.3814277327
-    ## bpps_49              -0.3222952294
-    ## bpps_50              -0.3889059051
-    ## bpps_51              -0.3941227726
-    ## bpps_52              -0.4168088152
-    ## bpps_53              -0.4679564860
-    ## bpps_54              -0.4293615721
-    ## bpps_55              -0.4041044570
-    ## bpps_56              -0.4324402786
-    ## bpps_57              -0.3913671067
-    ## bpps_58              -0.4373813727
-    ## bpps_59              -0.4144501882
-    ## bpps_60              -0.3994298108
-    ## bpps_61              -0.4332177702
-    ## bpps_62              -0.4458690400
-    ## bpps_63              -0.4770292756
-    ## bpps_64              -0.4497706196
-    ## bpps_65              -0.4481930715
-    ## bpps_66              -0.4321033826
-    ## bpps_67              -0.4050062531
-    ## bpps_68              -0.3301022722
-    ## bpps_69              -0.5163411619
-    ## bpps_70              -0.4413568771
-    ## bpps_71              -0.4736133377
-    ## bpps_72              -0.5468126906
-    ## bpps_73              -0.5498587140
-    ## bpps_74              -0.4586881753
-    ## bpps_75              -0.5485695944
-    ## bpps_76              -0.8564527024
-    ## bpps_77              -0.6858199627
-    ## bpps_78              -0.5828492341
-    ## bpps_79              -0.7479304139
-    ## bpps_80              -0.2967807679
-    ## bpps_81              -0.6604112234
-    ## bpps_82              -0.4249450349
-    ## bpps_83              -0.6096375273
-    ## bpps_84              -0.5624668469
-    ## bpps_85              -0.4789912596
-    ## bpps_86              -0.2309686831
-    ## bpps_87               0.5086875623
-    ## bpps_88              -0.3737524801
-    ## bpps_89              -0.2682430487
-    ## bpps_90              -0.9620124457
-    ## bpps_91              -0.7075814411
-    ## bpps_92               0.2036670103
-    ## bpps_93              -0.1452804297
-    ## bpps_94               0.3410804249
-    ## bpps_95               0.3404962929
-    ## bpps_96              -1.2764699159
-    ## bpps_97              -1.0290812469
-    ## bpps_98              -1.0174181286
-    ## bpps_99              -1.6469118847
-    ## bpps_100             -0.8639434789
-    ## bpps_101             -1.1878018965
-    ## bpps_102              0.4934701995
-    ## bpps_103              2.7922521806
+    ## sequenceC            -0.1211339592
+    ## sequenceG             0.0336351736
+    ## sequenceU             0.0313783470
+    ## index_sequence       -0.0050550884
+    ## structure)            0.0742273117
+    ## structure.            0.0602108006
+    ## predicted_loop_typeE -0.1584619712
+    ## predicted_loop_typeH -0.0975787172
+    ## predicted_loop_typeI -0.2254157303
+    ## predicted_loop_typeM -0.1308664710
+    ## predicted_loop_typeS -0.1264589337
+    ## predicted_loop_typeX -0.1404222501
+    ## seq_beC               0.0028795285
+    ## seq_beG               0.0852441277
+    ## seq_beO              -0.0325497436
+    ## seq_beU               0.0682938323
+    ## seq_afC              -0.2196039472
+    ## seq_afG              -0.2377632662
+    ## seq_afO              -0.0234997609
+    ## seq_afU               0.0417424551
+    ## struct_be)            0.0096317705
+    ## struct_be.            0.0570953284
+    ## struct_beO           -0.0023010068
+    ## struct_af)            0.0527437922
+    ## struct_af.            0.1229996651
+    ## struct_afO           -0.0197062829
+    ## loop_type_beE        -0.0433043447
+    ## loop_type_beH        -0.0573998845
+    ## loop_type_beI        -0.0048846107
+    ## loop_type_beM         0.0089993727
+    ## loop_type_beO        -0.0019233881
+    ## loop_type_beS        -0.0002716945
+    ## loop_type_beX         0.0075968223
+    ## loop_type_afE        -0.0205625178
+    ## loop_type_afH         0.0636306974
+    ## loop_type_afI        -0.0551777340
+    ## loop_type_afM        -0.0130848993
+    ## loop_type_afO        -0.0294892758
+    ## loop_type_afS        -0.0004265087
+    ## loop_type_afX        -0.0091482119
+    ## bpps_0               -1.2809938841
+    ## bpps_1               -0.8556997641
+    ## bpps_2               -0.2808850430
+    ## bpps_3               -0.8904531023
+    ## bpps_4               -0.4909161909
+    ## bpps_5               -0.3555822856
+    ## bpps_6               -0.3704418433
+    ## bpps_7               -0.3960793941
+    ## bpps_8               -0.3917625882
+    ## bpps_9               -0.4630600632
+    ## bpps_10              -0.4584873435
+    ## bpps_11              -0.4679218071
+    ## bpps_12              -0.4586990028
+    ## bpps_13              -0.4569405365
+    ## bpps_14              -0.4748902821
+    ## bpps_15              -0.4467116208
+    ## bpps_16              -0.4370017863
+    ## bpps_17              -0.4606767985
+    ## bpps_18              -0.4335785622
+    ## bpps_19              -0.4583041611
+    ## bpps_20              -0.4877771634
+    ## bpps_21              -0.4798993249
+    ## bpps_22              -0.4958047152
+    ## bpps_23              -0.4544622680
+    ## bpps_24              -0.4334245725
+    ## bpps_25              -0.4532011024
+    ## bpps_26              -0.4480143037
+    ## bpps_27              -0.4342838534
+    ## bpps_28              -0.4507571343
+    ## bpps_29              -0.4917501766
+    ## bpps_30              -0.4850694286
+    ## bpps_31              -0.4546154508
+    ## bpps_32              -0.4555657451
+    ## bpps_33              -0.4821933878
+    ## bpps_34              -0.4158941322
+    ## bpps_35              -0.4269067625
+    ## bpps_36              -0.3771453252
+    ## bpps_37              -0.3590998106
+    ## bpps_38              -0.4021050938
+    ## bpps_39              -0.3798271334
+    ## bpps_40              -0.4053116241
+    ## bpps_41              -0.4428341933
+    ## bpps_42              -0.4363917154
+    ## bpps_43              -0.4218454198
+    ## bpps_44              -0.4234025952
+    ## bpps_45              -0.4255173330
+    ## bpps_46              -0.3996790531
+    ## bpps_47              -0.4202909461
+    ## bpps_48              -0.3804730332
+    ## bpps_49              -0.3213336946
+    ## bpps_50              -0.3879677279
+    ## bpps_51              -0.3931859700
+    ## bpps_52              -0.4158680953
+    ## bpps_53              -0.4670135583
+    ## bpps_54              -0.4284159540
+    ## bpps_55              -0.4031477923
+    ## bpps_56              -0.4315015048
+    ## bpps_57              -0.3904526032
+    ## bpps_58              -0.4364421114
+    ## bpps_59              -0.4135144344
+    ## bpps_60              -0.3985216602
+    ## bpps_61              -0.4323080651
+    ## bpps_62              -0.4449467396
+    ## bpps_63              -0.4760881139
+    ## bpps_64              -0.4488385289
+    ## bpps_65              -0.4472492160
+    ## bpps_66              -0.4310761535
+    ## bpps_67              -0.4038982896
+    ## bpps_68              -0.3287813709
+    ## bpps_69              -0.5150303536
+    ## bpps_70              -0.4400907637
+    ## bpps_71              -0.4722161625
+    ## bpps_72              -0.5454108330
+    ## bpps_73              -0.5482889223
+    ## bpps_74              -0.4572801991
+    ## bpps_75              -0.5476694768
+    ## bpps_76              -0.8553589582
+    ## bpps_77              -0.6844004065
+    ## bpps_78              -0.5811753212
+    ## bpps_79              -0.7463124324
+    ## bpps_80              -0.2954261200
+    ## bpps_81              -0.6589776922
+    ## bpps_82              -0.4236481781
+    ## bpps_83              -0.6083506737
+    ## bpps_84              -0.5608534010
+    ## bpps_85              -0.4771765464
+    ## bpps_86              -0.2291931580
+    ## bpps_87               0.5084052041
+    ## bpps_88              -0.3719510315
+    ## bpps_89              -0.2663092930
+    ## bpps_90              -0.9601482043
+    ## bpps_91              -0.7059577341
+    ## bpps_92               0.2026045315
+    ## bpps_93              -0.1439513132
+    ## bpps_94               0.3401429151
+    ## bpps_95               0.3376493725
+    ## bpps_96              -1.2735229262
+    ## bpps_97              -1.0255464680
+    ## bpps_98              -1.0121001680
+    ## bpps_99              -1.6317840927
+    ## bpps_100             -0.8508638071
+    ## bpps_101             -1.1842884561
+    ## bpps_102              0.4712853773
+    ## bpps_103              2.7760454150
     ## bpps_104              .           
-    ## bpps_105             -1.1962825983
-    ## bpps_106             -0.3930820385
+    ## bpps_105             -1.1834883591
+    ## bpps_106             -0.3864762828
 
 On calcule les prédictions et les erreurs pour le modèle avec
 pénalisation elastic-net.
@@ -1371,7 +1373,7 @@ error_enet_gamma_train <- mean((y_pred_enet_gamma_train - data_train$reactivity)
 print(error_enet_gamma_train)
 ```
 
-    ## [1] 0.1141849
+    ## [1] 0.1141859
 
 ``` r
 y_pred_enet_gamma_val = predict(model_gamma_reactivity_pen_enet, data_val_pen,
@@ -1380,7 +1382,7 @@ error_enet_gamma_val <- mean((y_pred_enet_gamma_val - data_val$reactivity)^2, na
 print(error_enet_gamma_val)
 ```
 
-    ## [1] 0.1092896
+    ## [1] 0.1092899
 
 On stocke les résultats et on supprime les variables temporaires.
 
@@ -1408,7 +1410,7 @@ models_reactivity_errors_df
     ## 1       model_gamma               0.1068768             0.1016558
     ## 2 model_gamma_ridge               0.1152234             0.1104566
     ## 3 model_gamma_lasso               0.1141861             0.1092906
-    ## 4  model_gamma_enet               0.1141849             0.1092896
+    ## 4  model_gamma_enet               0.1141859             0.1092899
 
 Le meilleur modèle (au sens de la minimisation du MSE sur la validation)
 est le `model_gamma_enet` (si on exclut le premier modèle qui n’était
@@ -1419,7 +1421,7 @@ models_reactivity_errors_df[which.min(errors_reactivity_val[-1]) + 1, ]
 ```
 
     ##   models_reactivity errors_reactivity_train errors_reactivity_val
-    ## 4  model_gamma_enet               0.1141849             0.1092896
+    ## 4  model_gamma_enet               0.1141859             0.1092899
 
 ## deg\_Mg\_pH10
 
@@ -4846,7 +4848,7 @@ On choisit \(\alpha\) qui minimise le MSE sur la validation.
 #                  y_true_val = data_val$deg_50C)
 ```
 
-On trouve \(\alpha = 0.8\).
+On trouve \(\alpha = 0.9\).
 
 ``` r
 #print(alpha_opti_enet_gamma_deg_50C)
@@ -4879,155 +4881,155 @@ coef(model_gamma_deg_50C_pen_enet, s = "lambda.min")
 
     ## 149 x 1 sparse Matrix of class "dgCMatrix"
     ##                                 1
-    ## (Intercept)           1.281696408
+    ## (Intercept)           1.281691172
     ## (Intercept)           .          
-    ## sequenceC             0.003590471
-    ## sequenceG             0.103626441
-    ## sequenceU             0.059420499
-    ## index_sequence       -0.005204866
-    ## structure)            0.020707708
+    ## sequenceC             0.003605559
+    ## sequenceG             0.103638327
+    ## sequenceU             0.059430212
+    ## index_sequence       -0.005205080
+    ## structure)            0.020693693
     ## structure.            .          
-    ## predicted_loop_typeE  0.056152152
-    ## predicted_loop_typeH -0.059878720
-    ## predicted_loop_typeI -0.122925943
-    ## predicted_loop_typeM -0.009080636
-    ## predicted_loop_typeS -0.005532821
-    ## predicted_loop_typeX -0.001443957
-    ## seq_beC              -0.025666366
-    ## seq_beG               0.051469198
-    ## seq_beO              -0.110053299
-    ## seq_beU               0.058311162
-    ## seq_afC              -0.269425641
-    ## seq_afG              -0.199491562
-    ## seq_afO               0.071285645
-    ## seq_afU               0.058491321
-    ## struct_be)            0.063132341
-    ## struct_be.            0.077540879
-    ## struct_beO           -0.012699191
-    ## struct_af)            0.054639361
+    ## predicted_loop_typeE  0.056228327
+    ## predicted_loop_typeH -0.059836382
+    ## predicted_loop_typeI -0.122909651
+    ## predicted_loop_typeM -0.009057070
+    ## predicted_loop_typeS -0.005450353
+    ## predicted_loop_typeX -0.001402770
+    ## seq_beC              -0.025664361
+    ## seq_beG               0.051471290
+    ## seq_beO              -0.115670004
+    ## seq_beU               0.058314694
+    ## seq_afC              -0.269427918
+    ## seq_afG              -0.199495080
+    ## seq_afO               0.080028888
+    ## seq_afU               0.058491805
+    ## struct_be)            0.063141638
+    ## struct_be.            0.077553265
+    ## struct_beO           -0.007685591
+    ## struct_af)            0.054655080
     ## struct_af.            .          
-    ## struct_afO            0.017316294
-    ## loop_type_beE        -0.005371185
-    ## loop_type_beH         0.026503933
+    ## struct_afO            0.009719679
+    ## loop_type_beE        -0.005418477
+    ## loop_type_beH         0.026479964
     ## loop_type_beI         .          
-    ## loop_type_beM         0.014480158
-    ## loop_type_beO        -0.000726418
+    ## loop_type_beM         0.014472869
+    ## loop_type_beO        -0.000162315
     ## loop_type_beS         .          
-    ## loop_type_beX        -0.014774979
-    ## loop_type_afE         0.021448919
-    ## loop_type_afH        -0.020884133
-    ## loop_type_afI         0.027920120
-    ## loop_type_afM         0.042822533
-    ## loop_type_afO         0.005263992
-    ## loop_type_afS        -0.056542558
-    ## loop_type_afX         0.087573706
-    ## bpps_0               -0.093488617
-    ## bpps_1               -0.615764283
-    ## bpps_2               -0.429230951
-    ## bpps_3               -0.836818676
-    ## bpps_4               -0.522427752
-    ## bpps_5               -0.117102568
-    ## bpps_6               -0.188714239
-    ## bpps_7               -0.270226723
-    ## bpps_8               -0.299697042
-    ## bpps_9               -0.355030667
-    ## bpps_10              -0.420491438
-    ## bpps_11              -0.423082683
-    ## bpps_12              -0.374001957
-    ## bpps_13              -0.397945877
-    ## bpps_14              -0.412498175
-    ## bpps_15              -0.390631991
-    ## bpps_16              -0.379842317
-    ## bpps_17              -0.373428959
-    ## bpps_18              -0.378520796
-    ## bpps_19              -0.423831353
-    ## bpps_20              -0.434784084
-    ## bpps_21              -0.446764601
-    ## bpps_22              -0.409634184
-    ## bpps_23              -0.411228880
-    ## bpps_24              -0.390852564
-    ## bpps_25              -0.411927100
-    ## bpps_26              -0.383155074
-    ## bpps_27              -0.386732402
-    ## bpps_28              -0.407782147
-    ## bpps_29              -0.443050128
-    ## bpps_30              -0.440226366
-    ## bpps_31              -0.429494745
-    ## bpps_32              -0.436091018
-    ## bpps_33              -0.457725221
-    ## bpps_34              -0.393444498
-    ## bpps_35              -0.417547518
-    ## bpps_36              -0.293516262
-    ## bpps_37              -0.335293359
-    ## bpps_38              -0.387470134
-    ## bpps_39              -0.344067223
-    ## bpps_40              -0.363030649
-    ## bpps_41              -0.377909887
-    ## bpps_42              -0.389692626
-    ## bpps_43              -0.392951541
-    ## bpps_44              -0.386842031
-    ## bpps_45              -0.364260415
-    ## bpps_46              -0.332514479
-    ## bpps_47              -0.360761701
-    ## bpps_48              -0.379140472
-    ## bpps_49              -0.338543752
-    ## bpps_50              -0.387832216
-    ## bpps_51              -0.351091365
-    ## bpps_52              -0.397813173
-    ## bpps_53              -0.411108650
-    ## bpps_54              -0.413181942
-    ## bpps_55              -0.360374563
-    ## bpps_56              -0.405090592
-    ## bpps_57              -0.345047426
-    ## bpps_58              -0.385565189
-    ## bpps_59              -0.358389171
-    ## bpps_60              -0.344064361
-    ## bpps_61              -0.388792023
-    ## bpps_62              -0.348067195
-    ## bpps_63              -0.388187652
-    ## bpps_64              -0.333426148
-    ## bpps_65              -0.352668593
-    ## bpps_66              -0.283421095
-    ## bpps_67              -0.259586844
-    ## bpps_68              -0.156992634
-    ## bpps_69              -0.260171328
-    ## bpps_70              -0.359459987
-    ## bpps_71              -0.292621034
-    ## bpps_72              -0.294243743
-    ## bpps_73              -0.265557306
-    ## bpps_74              -0.215411448
-    ## bpps_75              -0.070705381
-    ## bpps_76              -0.589007467
-    ## bpps_77              -0.066004611
-    ## bpps_78              -0.308681320
-    ## bpps_79              -0.516341863
-    ## bpps_80              -0.058930474
-    ## bpps_81              -0.375532215
-    ## bpps_82              -0.355366531
-    ## bpps_83              -0.183701093
-    ## bpps_84              -0.094443500
-    ## bpps_85              -0.438978996
-    ## bpps_86              -0.208468214
-    ## bpps_87               0.124864183
-    ## bpps_88              -0.254778945
-    ## bpps_89               0.394577377
-    ## bpps_90               0.142324652
-    ## bpps_91              -0.705656038
-    ## bpps_92               1.415275181
-    ## bpps_93               1.217074181
-    ## bpps_94               0.405780828
-    ## bpps_95               0.412569363
-    ## bpps_96              -2.024531418
-    ## bpps_97               1.202069158
-    ## bpps_98              -0.775967404
-    ## bpps_99              -0.586732386
-    ## bpps_100             -1.375897499
-    ## bpps_101             -0.924830759
-    ## bpps_102              0.186343303
-    ## bpps_103              3.459253414
-    ## bpps_104             -0.437630064
-    ## bpps_105             -1.027340357
-    ## bpps_106              2.426367843
+    ## loop_type_beX        -0.014792008
+    ## loop_type_afE         0.021415326
+    ## loop_type_afH        -0.020905300
+    ## loop_type_afI         0.027906479
+    ## loop_type_afM         0.042810457
+    ## loop_type_afO         0.004100376
+    ## loop_type_afS        -0.056557579
+    ## loop_type_afX         0.087557465
+    ## bpps_0               -0.093608693
+    ## bpps_1               -0.615872814
+    ## bpps_2               -0.429299610
+    ## bpps_3               -0.836925463
+    ## bpps_4               -0.522534500
+    ## bpps_5               -0.117172930
+    ## bpps_6               -0.188793618
+    ## bpps_7               -0.270308743
+    ## bpps_8               -0.299779647
+    ## bpps_9               -0.355112832
+    ## bpps_10              -0.420576424
+    ## bpps_11              -0.423168066
+    ## bpps_12              -0.374083704
+    ## bpps_13              -0.398028990
+    ## bpps_14              -0.412582218
+    ## bpps_15              -0.390716415
+    ## bpps_16              -0.379926150
+    ## bpps_17              -0.373511090
+    ## bpps_18              -0.378602746
+    ## bpps_19              -0.423915429
+    ## bpps_20              -0.434867640
+    ## bpps_21              -0.446847069
+    ## bpps_22              -0.409718204
+    ## bpps_23              -0.411312178
+    ## bpps_24              -0.390932900
+    ## bpps_25              -0.412008942
+    ## bpps_26              -0.383236414
+    ## bpps_27              -0.386813411
+    ## bpps_28              -0.407862427
+    ## bpps_29              -0.443133208
+    ## bpps_30              -0.440308009
+    ## bpps_31              -0.429577727
+    ## bpps_32              -0.436173142
+    ## bpps_33              -0.457808153
+    ## bpps_34              -0.393522748
+    ## bpps_35              -0.417628778
+    ## bpps_36              -0.293593420
+    ## bpps_37              -0.335372064
+    ## bpps_38              -0.387549470
+    ## bpps_39              -0.344143322
+    ## bpps_40              -0.363105279
+    ## bpps_41              -0.377986626
+    ## bpps_42              -0.389771462
+    ## bpps_43              -0.393029248
+    ## bpps_44              -0.386921864
+    ## bpps_45              -0.364337948
+    ## bpps_46              -0.332591506
+    ## bpps_47              -0.360837959
+    ## bpps_48              -0.379218255
+    ## bpps_49              -0.338620509
+    ## bpps_50              -0.387909848
+    ## bpps_51              -0.351167684
+    ## bpps_52              -0.397891145
+    ## bpps_53              -0.411187812
+    ## bpps_54              -0.413260316
+    ## bpps_55              -0.360453233
+    ## bpps_56              -0.405168728
+    ## bpps_57              -0.345124713
+    ## bpps_58              -0.385644718
+    ## bpps_59              -0.358466535
+    ## bpps_60              -0.344139075
+    ## bpps_61              -0.388870856
+    ## bpps_62              -0.348143019
+    ## bpps_63              -0.388264895
+    ## bpps_64              -0.333501401
+    ## bpps_65              -0.352741723
+    ## bpps_66              -0.283494029
+    ## bpps_67              -0.259642342
+    ## bpps_68              -0.157069742
+    ## bpps_69              -0.260243739
+    ## bpps_70              -0.359532334
+    ## bpps_71              -0.292693783
+    ## bpps_72              -0.294321214
+    ## bpps_73              -0.265644400
+    ## bpps_74              -0.215506768
+    ## bpps_75              -0.070731241
+    ## bpps_76              -0.589051156
+    ## bpps_77              -0.066086861
+    ## bpps_78              -0.308771391
+    ## bpps_79              -0.516445527
+    ## bpps_80              -0.059003910
+    ## bpps_81              -0.375610572
+    ## bpps_82              -0.355427977
+    ## bpps_83              -0.183771033
+    ## bpps_84              -0.094530484
+    ## bpps_85              -0.439083462
+    ## bpps_86              -0.208529565
+    ## bpps_87               0.124781179
+    ## bpps_88              -0.254837738
+    ## bpps_89               0.394503809
+    ## bpps_90               0.142210235
+    ## bpps_91              -0.705725029
+    ## bpps_92               1.415203829
+    ## bpps_93               1.217091805
+    ## bpps_94               0.405694289
+    ## bpps_95               0.412520230
+    ## bpps_96              -2.024736855
+    ## bpps_97               1.202054202
+    ## bpps_98              -0.776199499
+    ## bpps_99              -0.586806928
+    ## bpps_100             -1.376497701
+    ## bpps_101             -0.924620159
+    ## bpps_102              0.186451980
+    ## bpps_103              3.459795491
+    ## bpps_104             -0.437900543
+    ## bpps_105             -1.027762368
+    ## bpps_106              2.426145605
 
 On calcule les prédictions et les erreurs pour le modèle avec
 pénalisation elastic-net.
@@ -5048,7 +5050,7 @@ error_enet_gamma_val <- mean((y_pred_enet_gamma_val - data_val$deg_50C)^2, na.rm
 print(error_enet_gamma_val)
 ```
 
-    ## [1] 0.1052458
+    ## [1] 0.1052456
 
 On stocke les résultats et on supprime les variables temporaires.
 
@@ -5076,7 +5078,7 @@ models_deg_50C_errors_df
     ## 1       model_gamma            0.1024536          0.1013885
     ## 2 model_gamma_ridge            0.1067088          0.1060946
     ## 3 model_gamma_lasso            0.1061319          0.1052459
-    ## 4  model_gamma_enet            0.1061323          0.1052458
+    ## 4  model_gamma_enet            0.1061323          0.1052456
 
 Le meilleur modèle (au sens de la minimisation du MSE sur la validation)
 est le `model_gamma_lasso` (si on exclut le premier modèle qui n’était
@@ -5087,11 +5089,40 @@ models_deg_50C_errors_df[which.min(errors_deg_50C_val[-1]) + 1, ]
 ```
 
     ##     models_deg_50C errors_deg_50C_train errors_deg_50C_val
-    ## 4 model_gamma_enet            0.1061323          0.1052458
+    ## 4 model_gamma_enet            0.1061323          0.1052456
 
 <a id="soumission1"></a>
 
 # Soumission GLM
+
+``` r
+#alpha_enet_df <- data.frame(reactivity = alpha_opti_enet_gamma_reactivity,
+#                            deg_Mg_pH10 = alpha_opti_enet_gamma_deg_Mg_pH10,
+#                            deg_pH10 = alpha_opti_enet_gamma_deg_pH10,
+#                            deg_Mg_50C = alpha_opti_enet_gamma_deg_Mg_50C,
+#                            deg_50C = alpha_opti_enet_gamma_deg_50C)
+```
+
+``` r
+#alpha_enet_df
+```
+
+``` r
+##save(alpha_enet_df, file = "alpha_enet_df.Rda")
+load(file = "alpha_enet_df.Rda")
+```
+
+``` r
+alpha_opti_enet_gamma_reactivity <- alpha_enet_df$reactivity
+  
+alpha_opti_enet_gamma_deg_Mg_pH10 <- alpha_enet_df$deg_Mg_pH10
+  
+alpha_opti_enet_gamma_deg_pH10 <- alpha_enet_df$deg_pH10
+  
+alpha_opti_enet_gamma_deg_Mg_50C <- alpha_enet_df$deg_Mg_50C
+  
+alpha_opti_enet_gamma_deg_50C <- alpha_enet_df$deg_50C
+```
 
 ``` r
 ##data_test=read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_test.csv")
@@ -5138,7 +5169,60 @@ models_deg_50C_errors_df[which.min(errors_deg_50C_val[-1]) + 1, ]
 ```
 
 ``` r
-# Pour faire la matrice de design du test
+## Pour faire la matrice de design du train
+
+#model_gamma_reactivity_train = glm(formula = formula_gamma_reactivity,
+#                               family = Gamma(link = "log"), data = data)
+#data_pen_reactivity = model.matrix(model_gamma_reactivity_train)
+#
+#model_gamma_deg_Mg_pH10_train = glm(formula = formula_gamma_deg_Mg_pH10,
+#                               family = Gamma(link = "log"), data = data)
+#data_pen_deg_Mg_pH10 = model.matrix(model_gamma_deg_Mg_pH10_train)
+#
+#model_gamma_deg_pH10_train = glm(formula = formula_gamma_deg_pH10,
+#                               family = Gamma(link = "log"), data = data)
+#data_pen_deg_pH10 = model.matrix(model_gamma_deg_pH10_train)
+#
+#model_gamma_deg_Mg_50C_train = glm(formula = formula_gamma_deg_Mg_50C,
+#                                  family = Gamma(link = "log"), data = data)
+#data_pen_deg_Mg_50C = model.matrix(model_gamma_deg_Mg_50C_train)
+#
+#model_gamma_deg_50C_train = glm(formula = formula_gamma_deg_50C,
+#                               family = Gamma(link = "log"), data = data)
+#data_pen_deg_50C = model.matrix(model_gamma_deg_50C_train)
+```
+
+``` r
+#model_reactivity = update(object = model_reactivity,
+#                          x = data_pen_reactivity, y = data$reactivity)
+#model_deg_Mg_pH10 = update(object = model_deg_Mg_pH10,
+#                           x = data_pen_deg_Mg_pH10, y = data$deg_Mg_pH10)
+#model_deg_pH10 = update(object = model_deg_pH10,
+#                        x = data_pen_deg_pH10, y = data$deg_pH10)
+#model_deg_Mg_50C = update(object = model_deg_Mg_50C,
+#                          x = data_pen_deg_Mg_50C, y = data$deg_Mg_50C)
+#model_deg_50C = update(object = model_deg_50C,
+#                       x = data_pen_deg_50C, y = data$deg_50C)
+```
+
+``` r
+#saveRDS(model_reactivity, file = "model_reactivity.rds")
+#saveRDS(model_deg_Mg_pH10, file = "model_deg_Mg_pH10.rds")
+#saveRDS(model_deg_pH10, file = "model_deg_pH10.rds")
+#saveRDS(model_deg_Mg_50C, file = "model_deg_Mg_50C.rds")
+#saveRDS(model_deg_50C, file = "model_deg_50C.rds")
+```
+
+``` r
+#model_reactivity = readRDS("model_reactivity.rds")
+#model_deg_Mg_pH10 = readRDS("model_deg_Mg_pH10.rds")
+#model_deg_pH10 = readRDS("model_deg_pH10.rds")
+#model_deg_Mg_50C = readRDS("model_deg_Mg_50C.rds")
+#model_deg_50C = readRDS("model_deg_50C.rds")
+```
+
+``` r
+## Pour faire la matrice de design du test
 
 #model_gamma_reactivity_test = glm(formula = formula_gamma_reactivity,
 #                               family = Gamma(link = "log"), data = data_test)
@@ -5162,14 +5246,14 @@ models_deg_50C_errors_df[which.min(errors_deg_50C_val[-1]) + 1, ]
 ```
 
 ``` r
-# On supprime les modèles sur le test
+## On supprime les modèles sur le test
 #rm(model_gamma_reactivity_test, model_gamma_deg_Mg_pH10_test,
 #   model_gamma_deg_pH10_test, model_gamma_deg_Mg_50C_test,
 #   model_gamma_deg_50C_test)
 ```
 
 ``` r
-# ATTENTION: nos modèles prédisent les labels translatés, donc il faut revenir aux labels initiaux en retirant la translation (on a stocké l'opposé de la translation de chaque label dans translation_labels, d'où le "+" au lieu du "-")
+## ATTENTION: nos modèles prédisent les labels translatés, donc il faut revenir aux labels initiaux en retirant la translation (on a stocké l'opposé de la translation de chaque label dans translation_labels, d'où le "+" au lieu du "-")
 
 #y_test_pred = y_test_pred %>%
 #  mutate(reactivity = predict(model_reactivity, data_test_pen_reactivity,
@@ -5482,7 +5566,9 @@ data=data[data$SN_filter==1,]
 rownames(data)=NULL
 ```
 
-## Création de la base train/validation
+<a id="split2"></a>
+
+# Séparation train/validation
 
 ``` r
 tamp=train_test_split(data)
@@ -5545,11 +5631,8 @@ formula_model_RF_reactivity <- paste0("reactivity", formula_model_full)
 ```
 
 ``` r
-#model_RF_reactivity = randomForest(formula = as.formula(formula_model_RF_reactivity),
-#                                   data = data_train,
-#                                   method = "anova",
-#                                   nodesize = 10,
-#                                   ntree=3)
+#model_RF_reactivity = randomForest(x = data_train[, 2:118], y = data_train$reactivity,
+#                                   ntree=20, do.trace = 1)
 ```
 
 ``` r
@@ -5562,11 +5645,11 @@ summary(model_RF_reactivity)
 ```
 
     ##                 Length Class  Mode     
-    ## call                6  -none- call     
+    ## call                5  -none- call     
     ## type                1  -none- character
     ## predicted       86428  -none- numeric  
-    ## mse                 3  -none- numeric  
-    ## rsq                 3  -none- numeric  
+    ## mse                20  -none- numeric  
+    ## rsq                20  -none- numeric  
     ## oob.times       86428  -none- numeric  
     ## importance        117  -none- numeric  
     ## importanceSD        0  -none- NULL     
@@ -5578,8 +5661,7 @@ summary(model_RF_reactivity)
     ## coefs               0  -none- NULL     
     ## y               86428  -none- numeric  
     ## test                0  -none- NULL     
-    ## inbag               0  -none- NULL     
-    ## terms               3  terms  call
+    ## inbag               0  -none- NULL
 
 ``` r
 y_pred_RF_train = predict(model_RF_reactivity,data_train,type="response")
@@ -5587,7 +5669,7 @@ error_RF_train <- mean((y_pred_RF_train-data_train$reactivity)^2,na.rm=TRUE)
 print(error_RF_train)
 ```
 
-    ## [1] 0.04392455
+    ## [1] 0.029551
 
 ``` r
 y_pred_RF_val=predict(model_RF_reactivity,data_val,type="response")
@@ -5595,7 +5677,7 @@ error_RF_val <- mean((y_pred_RF_val-data_val$reactivity)^2,na.rm=TRUE)
 print(error_RF_val)
 ```
 
-    ## [1] 0.04248808
+    ## [1] 0.03071405
 
 ``` r
 models_RF <- c(models_RF, "reactivity")
@@ -5610,11 +5692,8 @@ formula_model_RF_deg_Mg_pH10 <- paste0("deg_Mg_pH10", formula_model_full)
 ```
 
 ``` r
-#model_RF_deg_Mg_pH10 = randomForest(formula = as.formula(formula_model_RF_deg_Mg_pH10),
-#                                    data = data_train,
-#                                    method = "anova",
-#                                    nodesize = 10,
-#                                    ntree=3)
+#model_RF_deg_Mg_pH10 = randomForest(x = data_train[, 2:118], y = data_train$deg_Mg_pH10,
+#                                 ntree=20, do.trace = 1)
 ```
 
 ``` r
@@ -5627,11 +5706,11 @@ summary(model_RF_deg_Mg_pH10)
 ```
 
     ##                 Length Class  Mode     
-    ## call                6  -none- call     
+    ## call                5  -none- call     
     ## type                1  -none- character
     ## predicted       86428  -none- numeric  
-    ## mse                 3  -none- numeric  
-    ## rsq                 3  -none- numeric  
+    ## mse                20  -none- numeric  
+    ## rsq                20  -none- numeric  
     ## oob.times       86428  -none- numeric  
     ## importance        117  -none- numeric  
     ## importanceSD        0  -none- NULL     
@@ -5643,8 +5722,7 @@ summary(model_RF_deg_Mg_pH10)
     ## coefs               0  -none- NULL     
     ## y               86428  -none- numeric  
     ## test                0  -none- NULL     
-    ## inbag               0  -none- NULL     
-    ## terms               3  terms  call
+    ## inbag               0  -none- NULL
 
 ``` r
 y_pred_RF_train = predict(model_RF_deg_Mg_pH10,data_train,type="response")
@@ -5652,7 +5730,7 @@ error_RF_train <- mean((y_pred_RF_train-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
 print(error_RF_train)
 ```
 
-    ## [1] 0.07044225
+    ## [1] 0.0462261
 
 ``` r
 y_pred_RF_val=predict(model_RF_deg_Mg_pH10,data_val,type="response")
@@ -5660,7 +5738,7 @@ error_RF_val <- mean((y_pred_RF_val-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
 print(error_RF_val)
 ```
 
-    ## [1] 0.07516374
+    ## [1] 0.05464076
 
 ``` r
 models_RF <- c(models_RF, "deg_Mg_pH10")
@@ -5675,11 +5753,8 @@ formula_model_RF_deg_pH10 <- paste0("deg_pH10", formula_model_full)
 ```
 
 ``` r
-#model_RF_deg_pH10 = randomForest(formula = as.formula(formula_model_RF_deg_pH10),
-#                                    data = data_train,
-#                                    method = "anova",
-#                                    nodesize = 10,
-#                                    ntree=3)
+#model_RF_deg_pH10 = randomForest(x = data_train[, 2:118], y = data_train$deg_pH10,
+#                                 ntree=20, do.trace = 1)
 ```
 
 ``` r
@@ -5692,11 +5767,11 @@ summary(model_RF_deg_pH10)
 ```
 
     ##                 Length Class  Mode     
-    ## call                6  -none- call     
+    ## call                5  -none- call     
     ## type                1  -none- character
     ## predicted       86428  -none- numeric  
-    ## mse                 3  -none- numeric  
-    ## rsq                 3  -none- numeric  
+    ## mse                20  -none- numeric  
+    ## rsq                20  -none- numeric  
     ## oob.times       86428  -none- numeric  
     ## importance        117  -none- numeric  
     ## importanceSD        0  -none- NULL     
@@ -5708,8 +5783,7 @@ summary(model_RF_deg_pH10)
     ## coefs               0  -none- NULL     
     ## y               86428  -none- numeric  
     ## test                0  -none- NULL     
-    ## inbag               0  -none- NULL     
-    ## terms               3  terms  call
+    ## inbag               0  -none- NULL
 
 ``` r
 y_pred_RF_train = predict(model_RF_deg_pH10,data_train,type="response")
@@ -5717,7 +5791,7 @@ error_RF_train <- mean((y_pred_RF_train-data_train$deg_pH10)^2,na.rm=TRUE)
 print(error_RF_train)
 ```
 
-    ## [1] 0.04204673
+    ## [1] 0.03617675
 
 ``` r
 y_pred_RF_val=predict(model_RF_deg_pH10,data_val,type="response")
@@ -5725,7 +5799,7 @@ error_RF_val <- mean((y_pred_RF_val-data_val$deg_pH10)^2,na.rm=TRUE)
 print(error_RF_val)
 ```
 
-    ## [1] 0.1122844
+    ## [1] 0.04016071
 
 ``` r
 models_RF <- c(models_RF, "deg_pH10")
@@ -5740,11 +5814,8 @@ formula_model_RF_deg_Mg_50C <- paste0("deg_Mg_50C", formula_model_full)
 ```
 
 ``` r
-#model_RF_deg_Mg_50C = randomForest(formula = as.formula(formula_model_RF_deg_Mg_50C),
-#                                    data = data_train,
-#                                    method = "anova",
-#                                    nodesize = 10,
-#                                    ntree=3)
+#model_RF_deg_Mg_50C = randomForest(x = data_train[, 2:118], y = data_train$deg_Mg_50C,
+#                                   ntree=20, do.trace = 1)
 ```
 
 ``` r
@@ -5757,11 +5828,11 @@ summary(model_RF_deg_Mg_50C)
 ```
 
     ##                 Length Class  Mode     
-    ## call                6  -none- call     
+    ## call                5  -none- call     
     ## type                1  -none- character
     ## predicted       86428  -none- numeric  
-    ## mse                 3  -none- numeric  
-    ## rsq                 3  -none- numeric  
+    ## mse                20  -none- numeric  
+    ## rsq                20  -none- numeric  
     ## oob.times       86428  -none- numeric  
     ## importance        117  -none- numeric  
     ## importanceSD        0  -none- NULL     
@@ -5773,8 +5844,7 @@ summary(model_RF_deg_Mg_50C)
     ## coefs               0  -none- NULL     
     ## y               86428  -none- numeric  
     ## test                0  -none- NULL     
-    ## inbag               0  -none- NULL     
-    ## terms               3  terms  call
+    ## inbag               0  -none- NULL
 
 ``` r
 y_pred_RF_train = predict(model_RF_deg_Mg_50C,data_train,type="response")
@@ -5782,7 +5852,7 @@ error_RF_train <- mean((y_pred_RF_train-data_train$deg_Mg_50C)^2,na.rm=TRUE)
 print(error_RF_train)
 ```
 
-    ## [1] 0.04039788
+    ## [1] 0.03645121
 
 ``` r
 y_pred_RF_val=predict(model_RF_deg_Mg_50C,data_val,type="response")
@@ -5790,7 +5860,7 @@ error_RF_val <- mean((y_pred_RF_val-data_val$deg_Mg_50C)^2,na.rm=TRUE)
 print(error_RF_val)
 ```
 
-    ## [1] 0.109544
+    ## [1] 0.03922437
 
 ``` r
 models_RF <- c(models_RF, "deg_Mg_50C")
@@ -5805,11 +5875,8 @@ formula_model_RF_deg_50C <- paste0("deg_50C", formula_model_full)
 ```
 
 ``` r
-#model_RF_deg_50C = randomForest(formula = as.formula(formula_model_RF_deg_50C),
-#                                data = data_train,
-#                                method = "anova",
-#                                nodesize = 10,
-#                                ntree=3)
+#model_RF_deg_50C = randomForest(x = data_train[, 2:118], y = data_train$deg_50C,
+#                                ntree=20, do.trace = 1)
 ```
 
 ``` r
@@ -5822,11 +5889,11 @@ summary(model_RF_deg_Mg_50C)
 ```
 
     ##                 Length Class  Mode     
-    ## call                6  -none- call     
+    ## call                5  -none- call     
     ## type                1  -none- character
     ## predicted       86428  -none- numeric  
-    ## mse                 3  -none- numeric  
-    ## rsq                 3  -none- numeric  
+    ## mse                20  -none- numeric  
+    ## rsq                20  -none- numeric  
     ## oob.times       86428  -none- numeric  
     ## importance        117  -none- numeric  
     ## importanceSD        0  -none- NULL     
@@ -5838,8 +5905,7 @@ summary(model_RF_deg_Mg_50C)
     ## coefs               0  -none- NULL     
     ## y               86428  -none- numeric  
     ## test                0  -none- NULL     
-    ## inbag               0  -none- NULL     
-    ## terms               3  terms  call
+    ## inbag               0  -none- NULL
 
 ``` r
 y_pred_RF_train = predict(model_RF_deg_50C,data_train,type="response")
@@ -5847,7 +5913,7 @@ error_RF_train <- mean((y_pred_RF_train-data_train$deg_50C)^2,na.rm=TRUE)
 print(error_RF_train)
 ```
 
-    ## [1] 0.03075743
+    ## [1] 0.02785184
 
 ``` r
 y_pred_RF_val=predict(model_RF_deg_50C,data_val,type="response")
@@ -5855,7 +5921,7 @@ error_RF_val <- mean((y_pred_RF_val-data_val$deg_50C)^2,na.rm=TRUE)
 print(error_RF_val)
 ```
 
-    ## [1] 0.08495423
+    ## [1] 0.02904935
 
 ``` r
 models_RF <- c(models_RF, "deg_50C")
@@ -5874,11 +5940,11 @@ models_RF_df
 ```
 
     ##     models_RF errors_RF_train errors_RF_val
-    ## 1  reactivity      0.04392455    0.04248808
-    ## 2 deg_Mg_pH10      0.07044225    0.07516374
-    ## 3    deg_pH10      0.04204673    0.11228436
-    ## 4  deg_Mg_50C      0.04039788    0.10954402
-    ## 5     deg_50C      0.03075743    0.08495423
+    ## 1  reactivity      0.02955100    0.03071405
+    ## 2 deg_Mg_pH10      0.04622610    0.05464076
+    ## 3    deg_pH10      0.03617675    0.04016071
+    ## 4  deg_Mg_50C      0.03645121    0.03922437
+    ## 5     deg_50C      0.02785184    0.02904935
 
 <a id="soumission2"></a>
 
@@ -5898,31 +5964,106 @@ models_RF_df
 ```
 
 ``` r
-##y_test_pred=read.csv(file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
+##y_test_pred=read.csv(
+##  file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
 
-#y_test_pred = read.csv(file = "sample_submission.csv")
+#y_test_pred_RF = read.csv(file = "sample_submission.csv")
 ```
 
 ``` r
-#model_reactivity = readRDS("model_RF_reactivity.rds")
-#model_deg_Mg_pH10 = readRDS("model_RF_deg_Mg_pH10.rds")
-#model_deg_pH10 = readRDS("model_RF_deg_pH10.rds")
-#model_deg_Mg_50C = readRDS("model_RF_deg_Mg_50C.rds")
-#model_deg_50C = readRDS("model_RF_deg_50C.rds")
+#model_RF_reactivity = readRDS("model_RF_reactivity.rds")
+#model_RF_deg_Mg_pH10 = readRDS("model_RF_deg_Mg_pH10.rds")
+#model_RF_deg_pH10 = readRDS("model_RF_deg_pH10.rds")
+#model_RF_deg_Mg_50C = readRDS("model_RF_deg_Mg_50C.rds")
+#model_RF_deg_50C = readRDS("model_RF_deg_50C.rds")
+```
+
+On réentraine les modèles en incorporant le jeu de données de
+validation.
+
+``` r
+#model_RF_reactivity_submission = update(object = model_RF_reactivity,
+#                                        x = data[, 2:118],
+#                                        y = data$reactivity)
 ```
 
 ``` r
-#y_test_pred = y_test_pred %>%
-#  mutate(reactivity = predict(model_reactivity, data_test, type="response")) %>%
-#  mutate(deg_Mg_pH10 = predict(model_deg_Mg_pH10, data_test, type="response")) %>%
-#  mutate(deg_pH10 = predict(model_deg_pH10, data_test, type="response")) %>%
-#  mutate(deg_Mg_50C = predict(model_deg_Mg_50C, data_test, type="response")) %>%
-#  mutate(deg_50C = predict(model_deg_50C, data_test, type="response")) %>%
+#saveRDS(model_RF_reactivity_submission, file = "model_RF_reactivity_submission.rds")
+```
+
+``` r
+#model_RF_deg_Mg_pH10_submission = update(object = model_RF_deg_Mg_pH10,
+#                                         x = data[, 2:118],
+#                                         y = data$deg_Mg_pH10)
+```
+
+``` r
+#saveRDS(model_RF_deg_Mg_pH10_submission, file = "model_RF_deg_Mg_pH10_submission.rds")
+```
+
+``` r
+#model_RF_deg_pH10_submission = update(object = model_RF_deg_pH10,
+#                                      x = data[, 2:118],
+#                                      y = data$deg_pH10)
+```
+
+``` r
+#saveRDS(model_RF_deg_pH10_submission, file = "model_RF_deg_pH10_submission.rds")
+```
+
+``` r
+#model_RF_deg_Mg_50C_submission = update(object = model_RF_deg_Mg_50C,
+#                                        x = data[, 2:118],
+#                                        y = data$deg_Mg_50C)
+```
+
+``` r
+#saveRDS(model_RF_deg_Mg_50C_submission, file = "model_RF_deg_Mg_50C_submission.rds")
+```
+
+``` r
+#model_RF_deg_50C_submission = update(object = model_RF_deg_50C,
+#                                     x = data[, 2:118],
+#                                     y = data$deg_50C)
+```
+
+``` r
+#saveRDS(model_RF_deg_50C_submission, file = "model_RF_deg_50C_submission.rds")
+```
+
+``` r
+#saveRDS(model_RF_reactivity_submission, file = "model_RF_reactivity_submission.rds")
+#saveRDS(model_RF_deg_Mg_pH10_submission, file = "model_RF_deg_Mg_pH10_submission.rds")
+#saveRDS(model_RF_deg_pH10_submission, file = "model_RF_deg_pH10_submission.rds")
+#saveRDS(model_RF_deg_Mg_50C_submission, file = "model_RF_deg_Mg_50C_submission.rds")
+#saveRDS(model_RF_deg_50C_submission, file = "model_RF_deg_50C_submission.rds")
+```
+
+``` r
+#model_RF_reactivity_submission = readRDS("model_RF_reactivity_submision.rds")
+#model_RF_deg_Mg_pH10_submission = readRDS("model_RF_deg_Mg_pH10_submision.rds")
+#model_RF_deg_pH10_submission = readRDS("model_RF_deg_pH10_submision.rds")
+#model_RF_deg_Mg_50C_submission = readRDS("model_RF_deg_Mg_50C_submision.rds")
+#model_RF_deg_50C_submission = readRDS("model_RF_deg_50C_submision.rds")
+```
+
+``` r
+#y_test_pred_RF = y_test_pred_RF %>%
+#  mutate(reactivity = predict(model_RF_reactivity_submission,
+#                              data_test, type="response")) %>%
+#  mutate(deg_Mg_pH10 = predict(model_RF_deg_Mg_pH10_submission,
+#                               data_test, type="response")) %>%
+#  mutate(deg_pH10 = predict(model_RF_deg_pH10_submission,
+#                            data_test, type="response")) %>%
+#  mutate(deg_Mg_50C = predict(model_RF_deg_Mg_50C_submission,
+#                              data_test, type="response")) %>%
+#  mutate(deg_50C = predict(model_RF_deg_50C_submission,
+#                           data_test, type="response")) %>%
 #  mutate_all(unlist)
 ```
 
 ``` r
-#save(y_test_pred, file = "sample_submission_RF.Rda")
+#save(y_test_pred_RF, file = "sample_submission_RF.Rda")
 ```
 
 ``` r
@@ -5930,9 +6071,9 @@ models_RF_df
 ```
 
 ``` r
-#head(y_test_pred)
+#head(y_test_pred_RF)
 ```
 
 ``` r
-#fwrite(y_test_pred, "sample_submission_RF.csv")
+#fwrite(y_test_pred_RF, "sample_submission_RF.csv")
 ```
