@@ -121,3 +121,7 @@ Jawad -> Modèles Random Forest: entrainement de modèles avec 20 arbres au lieu
 **Dimanche 14 Mars**:
 
 Jawad -> Modèles GLM: écriture d'un fichier csv pour une soumission utilisant les modèles GLM optimisés et réentrainés en ajoutant les données de validation.
+
+**Lundi 15 Mars**:
+
+Jawad -> Modèles Random Forest: écriture d'un fichier csv pour une soumission utilisant les modèles Random Forest réentrainés en ajoutant les données de validation.
