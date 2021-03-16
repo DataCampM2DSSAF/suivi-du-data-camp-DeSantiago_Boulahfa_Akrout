@@ -6,7 +6,7 @@ output: github_document
 ### AKROUT Leyth, BOULAHFA Jawad, DE SANTIAGO Kylliann
 #### M2 Data Science: Santé, Assurance, Finance
 #### Université d'Evry Val d'Essonne
-### 7 mars 2021
+### 16 Mars 2021
 
 > [Premier chargement des données](#data1)
 
@@ -135,7 +135,6 @@ Il suffira d'ajouter pour chaque label sa valeur dans ce dataframe pour revenir 
 translation_labels
 ```
 
-
 <a id="split1"></a>
 
 # Séparation train/validation
@@ -169,8 +168,6 @@ sum(is.na(data_train))
 sum(is.na(data_val))
 dim(data_train)[1]+dim(data_val)[1]-dim(data)[1]
 ```
-
-<a id="glm"></a>
 
 # GLM: loi Gamma
 
@@ -1618,21 +1615,7 @@ errors_RF_train <- c()
 errors_RF_val <- c()
 ```
 
-Formule du modèle initial utilisé.
-```{r}
-formula_model_full <- " ~ sequence + index_sequence + structure + predicted_loop_type + seq_be + seq_af + struct_be + struct_af + loop_type_be + loop_type_af"
-for(i in 0:106)
-{
-  formula_model_full <- paste0(formula_model_full, " + bpps_", i)
-}
-print(formula_model_full)
-```
-
 ### Reactivity
-
-```{r}
-formula_model_RF_reactivity <- paste0("reactivity", formula_model_full)
-```
 
 ```{r}
 #model_RF_reactivity = randomForest(x = data_train[, 2:118], y = data_train$reactivity,
@@ -1667,10 +1650,6 @@ errors_RF_val <- c(errors_RF_val, error_RF_val)
 ### deg_Mg_pH10
 
 ```{r}
-formula_model_RF_deg_Mg_pH10 <- paste0("deg_Mg_pH10", formula_model_full)
-```
-
-```{r}
 #model_RF_deg_Mg_pH10 = randomForest(x = data_train[, 2:118], y = data_train$deg_Mg_pH10,
 #                                 ntree=20, do.trace = 1)
 ```
@@ -1701,10 +1680,6 @@ errors_RF_val <- c(errors_RF_val, error_RF_val)
 ```
 
 ### deg_pH10
-
-```{r}
-formula_model_RF_deg_pH10 <- paste0("deg_pH10", formula_model_full)
-```
 
 ```{r}
 #model_RF_deg_pH10 = randomForest(x = data_train[, 2:118], y = data_train$deg_pH10,
@@ -1739,10 +1714,6 @@ errors_RF_val <- c(errors_RF_val, error_RF_val)
 ### deg_Mg_50C
 
 ```{r}
-formula_model_RF_deg_Mg_50C <- paste0("deg_Mg_50C", formula_model_full)
-```
-
-```{r}
 #model_RF_deg_Mg_50C = randomForest(x = data_train[, 2:118], y = data_train$deg_Mg_50C,
 #                                   ntree=20, do.trace = 1)
 ```
@@ -1773,10 +1744,6 @@ errors_RF_val <- c(errors_RF_val, error_RF_val)
 ```
 
 ### deg_50C
-
-```{r}
-formula_model_RF_deg_50C <- paste0("deg_50C", formula_model_full)
-```
 
 ```{r}
 #model_RF_deg_50C = randomForest(x = data_train[, 2:118], y = data_train$deg_50C,

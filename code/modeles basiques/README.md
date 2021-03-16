@@ -7,7 +7,7 @@
 
 #### Université d’Evry Val d’Essonne
 
-### 7 mars 2021
+### 16 Mars 2021
 
 > [Premier chargement des données](#data1)
 
@@ -446,8 +446,6 @@ dim(data_train)[1]+dim(data_val)[1]-dim(data)[1]
 ```
 
     ## [1] 0
-
-<a id="glm"></a>
 
 # GLM: loi Gamma
 
@@ -5611,24 +5609,7 @@ errors_RF_train <- c()
 errors_RF_val <- c()
 ```
 
-Formule du modèle initial utilisé.
-
-``` r
-formula_model_full <- " ~ sequence + index_sequence + structure + predicted_loop_type + seq_be + seq_af + struct_be + struct_af + loop_type_be + loop_type_af"
-for(i in 0:106)
-{
-  formula_model_full <- paste0(formula_model_full, " + bpps_", i)
-}
-print(formula_model_full)
-```
-
-    ## [1] " ~ sequence + index_sequence + structure + predicted_loop_type + seq_be + seq_af + struct_be + struct_af + loop_type_be + loop_type_af + bpps_0 + bpps_1 + bpps_2 + bpps_3 + bpps_4 + bpps_5 + bpps_6 + bpps_7 + bpps_8 + bpps_9 + bpps_10 + bpps_11 + bpps_12 + bpps_13 + bpps_14 + bpps_15 + bpps_16 + bpps_17 + bpps_18 + bpps_19 + bpps_20 + bpps_21 + bpps_22 + bpps_23 + bpps_24 + bpps_25 + bpps_26 + bpps_27 + bpps_28 + bpps_29 + bpps_30 + bpps_31 + bpps_32 + bpps_33 + bpps_34 + bpps_35 + bpps_36 + bpps_37 + bpps_38 + bpps_39 + bpps_40 + bpps_41 + bpps_42 + bpps_43 + bpps_44 + bpps_45 + bpps_46 + bpps_47 + bpps_48 + bpps_49 + bpps_50 + bpps_51 + bpps_52 + bpps_53 + bpps_54 + bpps_55 + bpps_56 + bpps_57 + bpps_58 + bpps_59 + bpps_60 + bpps_61 + bpps_62 + bpps_63 + bpps_64 + bpps_65 + bpps_66 + bpps_67 + bpps_68 + bpps_69 + bpps_70 + bpps_71 + bpps_72 + bpps_73 + bpps_74 + bpps_75 + bpps_76 + bpps_77 + bpps_78 + bpps_79 + bpps_80 + bpps_81 + bpps_82 + bpps_83 + bpps_84 + bpps_85 + bpps_86 + bpps_87 + bpps_88 + bpps_89 + bpps_90 + bpps_91 + bpps_92 + bpps_93 + bpps_94 + bpps_95 + bpps_96 + bpps_97 + bpps_98 + bpps_99 + bpps_100 + bpps_101 + bpps_102 + bpps_103 + bpps_104 + bpps_105 + bpps_106"
-
 ### Reactivity
-
-``` r
-formula_model_RF_reactivity <- paste0("reactivity", formula_model_full)
-```
 
 ``` r
 #model_RF_reactivity = randomForest(x = data_train[, 2:118], y = data_train$reactivity,
@@ -5688,10 +5669,6 @@ errors_RF_val <- c(errors_RF_val, error_RF_val)
 ### deg\_Mg\_pH10
 
 ``` r
-formula_model_RF_deg_Mg_pH10 <- paste0("deg_Mg_pH10", formula_model_full)
-```
-
-``` r
 #model_RF_deg_Mg_pH10 = randomForest(x = data_train[, 2:118], y = data_train$deg_Mg_pH10,
 #                                 ntree=20, do.trace = 1)
 ```
@@ -5747,10 +5724,6 @@ errors_RF_val <- c(errors_RF_val, error_RF_val)
 ```
 
 ### deg\_pH10
-
-``` r
-formula_model_RF_deg_pH10 <- paste0("deg_pH10", formula_model_full)
-```
 
 ``` r
 #model_RF_deg_pH10 = randomForest(x = data_train[, 2:118], y = data_train$deg_pH10,
@@ -5810,10 +5783,6 @@ errors_RF_val <- c(errors_RF_val, error_RF_val)
 ### deg\_Mg\_50C
 
 ``` r
-formula_model_RF_deg_Mg_50C <- paste0("deg_Mg_50C", formula_model_full)
-```
-
-``` r
 #model_RF_deg_Mg_50C = randomForest(x = data_train[, 2:118], y = data_train$deg_Mg_50C,
 #                                   ntree=20, do.trace = 1)
 ```
@@ -5869,10 +5838,6 @@ errors_RF_val <- c(errors_RF_val, error_RF_val)
 ```
 
 ### deg\_50C
-
-``` r
-formula_model_RF_deg_50C <- paste0("deg_50C", formula_model_full)
-```
 
 ``` r
 #model_RF_deg_50C = randomForest(x = data_train[, 2:118], y = data_train$deg_50C,
