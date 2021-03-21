@@ -120,8 +120,15 @@ Jawad -> Modèles Random Forest: entrainement de modèles avec 20 arbres au lieu
 
 **Dimanche 14 Mars**:
 
-Jawad -> Modèles GLM: écriture d'un fichier csv pour une soumission utilisant les modèles GLM optimisés et réentrainés en ajoutant les données de validation.
+Jawad -> Modèles GLM: écriture d'un fichier csv pour une soumission utilisant les modèles GLM avec pénalisation elastic-net et réentrainés en ajoutant les données de validation.
 
 **Lundi 15 Mars**:
 
 Jawad -> Modèles Random Forest: écriture d'un fichier csv pour une soumission utilisant les modèles Random Forest réentrainés en ajoutant les données de validation.
+
+**Dimanche 21 Mars**:
+
+Jawad -> Création d'une nouvelle partie dans les modèles basiques: modèles de régression linéaire multiple (modèles sans pénalisation utilisant les BPPS, pénalisation ridge, lasso, elastic-net).
+Il s'avère que ce sont en général les modèles avec pénalisation elastic-net qui donnent les meilleures performances.
+Ecriture d'un fichier csv pour une soumission utilisant les modèles LM avec pénalisation elastic-net et réentrainés en ajoutant les données de validation.
+
