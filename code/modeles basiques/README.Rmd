@@ -6,23 +6,31 @@ output: github_document
 ### AKROUT Leyth, BOULAHFA Jawad, DE SANTIAGO Kylliann
 #### M2 Data Science: Santé, Assurance, Finance
 #### Université d'Evry Val d'Essonne
-### 16 Mars 2021
+### 21 Mars 2021
 
 > [Premier chargement des données](#data1)
 
 > [Séparation train/validation](#split1)
 
-> [GLM: loi Gamma](#glm)
+> [Régression Linéaire Multiple](#lm)
 
-> [Soumission GLM](#soumission1)
+> [Soumission Régression Linéaire Multiple](#soumission1)
 
-> [Second chargement des données](#data2)
+> [Deuxième chargement des données](#data2)
 
 > [Séparation train/validation](#split2)
 
+> [GLM: loi Gamma](#glm)
+
+> [Soumission GLM](#soumission2)
+
+> [Troisième chargement des données](#data3)
+
+> [Séparation train/validation](#split3)
+
 > [Random Forest](#rf)
 
-> [Soumission Random Forest](#soumission2)
+> [Soumission Random Forest](#soumission3)
 
 ```{r, echo=FALSE}
 rm(list = ls())
@@ -48,6 +56,1428 @@ set.seed(1)
 <a id="data1"></a>
 
 # Premier chargement des données
+
+Chargement du jeu de données.
+```{r}
+# data = read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_train.csv")
+data = read.csv("data_train.csv")
+head(data) # une colonne en trop
+data = data[,-1]
+head(data)
+```
+
+On change les types des variables qui sont mal codées.
+```{r}
+data=data %>% mutate(sequence = as.factor(sequence)) %>% 
+  mutate(seq_be = as.factor(seq_be)) %>% 
+  mutate(seq_af = as.factor(seq_af)) %>% 
+  mutate(sequence = as.factor(sequence)) %>% 
+  mutate(structure = as.factor(structure)) %>%
+  mutate(struct_be = as.factor(struct_be)) %>% 
+  mutate(struct_af = as.factor(struct_af)) %>% 
+  mutate(predicted_loop_type = as.factor(predicted_loop_type)) %>% 
+  mutate(loop_type_be = as.factor(loop_type_be)) %>% 
+  mutate(loop_type_af = as.factor(loop_type_af)) 
+```
+
+```{r}
+length_sequence_train <- 68
+```
+
+On filtre maintenant les données qui ont SN_filter=0.
+```{r}
+print(sum(is.na(data)))
+print(sum(data$SN_filter==0)/length_sequence_train) # Nombre d'individus dont le SN_filter=0
+data=data[data$SN_filter==1,]
+rownames(data)=NULL#1:108052
+```
+
+```{r}
+p = dim(data)[2]
+```
+
+<a id="lm"></a>
+
+# Séparation train/validation
+
+```{r}
+tamp=train_test_split(data)
+index_train = tamp$index_train
+
+data_train=tamp$train
+rownames(data_train) <- NULL
+
+data_val=tamp$val
+rownames(data_val) <- NULL
+
+rm(tamp)
+```
+
+```{r}
+sum(is.na(data_train))
+sum(is.na(data_val))
+dim(data_train)[1]+dim(data_val)[1]-dim(data)[1]
+```
+
+<a id="split1"></a>
+
+
+# Régression Linéaire Multiple 
+
+Initialisation de vecteurs pour stocker nos résultats.
+
+Résultats pour le label `reactivity`.
+```{r}
+models_reactivity <- c()
+errors_reactivity_train <- c()
+errors_reactivity_val <- c()
+```
+
+Résultats pour le label `deg_Mg_pH10`.
+```{r}
+models_deg_Mg_pH10 <- c()
+errors_deg_Mg_pH10_train <- c()
+errors_deg_Mg_pH10_val <- c()
+```
+
+Résultats pour le label `deg_pH10`.
+```{r}
+models_deg_pH10 <- c()
+errors_deg_pH10_train <- c()
+errors_deg_pH10_val <- c()
+```
+
+Résultats pour le label `deg_Mg_50C`.
+```{r}
+models_deg_Mg_50C <- c()
+errors_deg_Mg_50C_train <- c()
+errors_deg_Mg_50C_val <- c()
+```
+
+Résultats pour le label `deg_50C`.
+```{r}
+models_deg_50C <- c()
+errors_deg_50C_train <- c()
+errors_deg_50C_val <- c()
+```
+
+Formule du modèle initial utilisé.
+```{r}
+formula_model_full <- " ~ sequence + index_sequence + structure + predicted_loop_type + seq_be + seq_af + struct_be + struct_af + loop_type_be + loop_type_af"
+for(i in 0:106)
+{
+  formula_model_full <- paste0(formula_model_full, " + bpps_", i)
+}
+print(formula_model_full)
+```
+
+## Reactivity
+
+### Premier modèle
+
+```{r}
+formula_reactivity = paste0("reactivity", formula_model_full)
+```
+
+```{r}
+model_reactivity = lm(formula = formula_reactivity, data = data_train)
+```
+
+```{r}
+summary(model_reactivity)
+```
+
+Il est important de noter que le premier modèle n'est pas de plein rang, donc on ne peut pas se fier à ses prédictions. <br>
+Cependant, la pénalisation va nous aider à résoudre ce problème.
+```{r}
+y_pred_train = predict.lm(model_reactivity,data_train,type="response")
+error_train <- mean((y_pred_train-data_train$reactivity)^2,na.rm=TRUE)
+print(error_train)
+
+y_pred_val=predict.lm(model_reactivity,data_val,type="response")
+error_val <- mean((y_pred_val-data_val$reactivity)^2,na.rm=TRUE)
+print(error_val)
+```
+
+```{r}
+models_reactivity <- c(models_reactivity, "model_full")
+errors_reactivity_train <- c(errors_reactivity_train, error_train)
+errors_reactivity_val <- c(errors_reactivity_val, error_val)
+rm(error_val, error_train, y_pred_train, y_pred_val)
+```
+
+### Pénalisation ridge et lasso
+
+On commence par calculer la matrice de design du model_reactivity sur le train et le test.
+```{r}
+# Matrice de design du train
+data_train_pen = model.matrix(model_reactivity)
+#head(data_train_pen)
+```
+
+```{r}
+# Pour faire la matrice de design de la validation
+model_reactivity_val = lm(formula = formula_reactivity, data = data_val)
+data_val_pen = model.matrix(model_reactivity_val)
+#head(data_val_pen)
+
+# On supprime le modèle sur le test
+rm(model_reactivity_val)
+```
+
+On pénalise le model_reactivity avec une pénalité ridge.
+On choisira  dans la suite le $\lambda$ qui minimise l'erreur de cross validation avec
+`s = "lambda.min"`. On peut afficher les coefficients du modèle correspondant.
+```{r}
+#model_reactivity_pen_ridge = cv.glmnet(data_train_pen, data_train$reactivity,
+#                                       type.measure = "mse",
+#                                       alpha = 0,
+#                                       trace.it = 1)
+```
+
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_reactivity_pen_ridge, "model_reactivity_pen_ridge.rds")
+```
+
+Chargement du modèle.
+```{r}
+model_reactivity_pen_ridge <- readRDS("model_reactivity_pen_ridge.rds")
+```
+
+```{r}
+coef(model_reactivity_pen_ridge, s = "lambda.min")
+```
+
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation ridge.
+```{r}
+y_pred_ridge_train = predict(model_reactivity_pen_ridge, data_train_pen,
+                                   type = "response", s = "lambda.min")
+y_pred_ridge_val = predict(model_reactivity_pen_ridge, data_val_pen,
+                                 type = "response", s = "lambda.min")
+error_ridge_train <- mean((y_pred_ridge_train-data_train$reactivity)^2,na.rm=TRUE)
+print(error_ridge_train)
+error_ridge_val <- mean((y_pred_ridge_val-data_val$reactivity)^2,na.rm=TRUE)
+print(error_ridge_val)
+```
+
+On pénalise le model_reactivity avec une pénalité lasso.
+On choisira  dans la suite le $\lambda$ qui minimise l'erreur de cross validation avec `s = "lambda.min"`. On peut afficher les coefficients du modèle correspondant.
+```{r}
+#model_reactivity_pen_lasso = cv.glmnet(data_train_pen, data_train$reactivity,
+#                                       type.measure = "mse",
+#                                       alpha = 1,
+#                                       trace.it = 1)
+```
+
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_reactivity_pen_lasso, "model_reactivity_pen_lasso.rds")
+```
+
+Chargement du modèle.
+```{r}
+model_reactivity_pen_lasso <- readRDS("model_reactivity_pen_lasso.rds")
+```
+
+```{r}
+coef(model_reactivity_pen_lasso, s = "lambda.min")
+```
+
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation lasso.
+```{r}
+y_pred_lasso_train = predict(model_reactivity_pen_lasso, data_train_pen,
+                             type="response", s="lambda.min")
+error_lasso_train <- mean((y_pred_lasso_train-data_train$reactivity)^2,na.rm=TRUE)
+print(error_lasso_train)
+
+y_pred_lasso_val = predict(model_reactivity_pen_lasso, data_val_pen,
+                           type="response", s="lambda.min")
+error_lasso_val <- mean((y_pred_lasso_val-data_val$reactivity)^2,na.rm=TRUE)
+print(error_lasso_val)
+```
+
+On stocke les résultats et on supprime les variables temporaires.
+```{r}
+models_reactivity <- c(models_reactivity, "model_ridge", "model_lasso")
+errors_reactivity_train <- c(errors_reactivity_train, error_ridge_train,
+                             error_lasso_train)
+errors_reactivity_val <- c(errors_reactivity_val, error_ridge_val, error_lasso_val)
+rm(error_ridge_val, error_lasso_val,
+   error_ridge_train, error_lasso_train,
+   y_pred_ridge_train, y_pred_ridge_val,
+   y_pred_lasso_train, y_pred_lasso_val)
+```
+
+### Pénalisation elastic-net
+
+On choisit $\alpha$ qui minimise le MSE sur la validation.
+```{r}
+#alpha_opti_enet_reactivity =
+#  alpha_opti_enet(data_train = data_train_pen, data_val = data_val_pen,
+#                  y_true_train = data_train$reactivity,
+#                  y_true_val = data_val$reactivity)
+```
+
+On trouve $\alpha = 0.8$.
+```{r}
+#print(alpha_opti_enet_reactivity)
+```
+
+On construit le modèle avec le choix optimal pour $\alpha$.
+```{r}
+#model_reactivity_pen_enet = cv.glmnet(data_train_pen, data_train$reactivity,
+#                                             type.measure = "mse",
+#                                             alpha = alpha_opti_enet_reactivity,
+#                                             trace.it = 1)
+```
+
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_reactivity_pen_enet, "model_reactivity_pen_enet.rds")
+```
+
+Chargement du modèle.
+```{r}
+model_reactivity_pen_enet <- readRDS("model_reactivity_pen_enet.rds")
+```
+
+```{r}
+coef(model_reactivity_pen_enet, s = "lambda.min")
+```
+
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation elastic-net.
+```{r}
+y_pred_enet_train = predict(model_reactivity_pen_enet, data_train_pen,
+                                   type = "response", s = "lambda.min")
+error_enet_train <- mean((y_pred_enet_train - data_train$reactivity)^2, na.rm=TRUE)
+print(error_enet_train)
+
+y_pred_enet_val = predict(model_reactivity_pen_enet, data_val_pen,
+                                 type = "response", s = "lambda.min")
+error_enet_val <- mean((y_pred_enet_val - data_val$reactivity)^2, na.rm=TRUE)
+print(error_enet_val)
+```
+
+On stocke les résultats et on supprime les variables temporaires.
+```{r}
+models_reactivity <- c(models_reactivity, "model_enet")
+errors_reactivity_train <- c(errors_reactivity_train, error_enet_train)
+errors_reactivity_val <- c(errors_reactivity_val, error_enet_val)
+rm(error_enet_train, error_enet_val,
+   y_pred_enet_train, y_pred_enet_val)
+```
+
+### Récapitulatif des résultats
+
+```{r}
+models_reactivity_errors_df <- data.frame(models_reactivity,
+                                          errors_reactivity_train,
+                                          errors_reactivity_val)
+```
+
+```{r}
+models_reactivity_errors_df
+```
+
+Le meilleur modèle (au sens de la minimisation du MSE sur la validation) est le `model_enet` (si on exclut le premier modèle qui n'était pas de plein rang).
+```{r}
+models_reactivity_errors_df[which.min(errors_reactivity_val[-1]) + 1, ]
+```
+
+```{r, echo = FALSE}
+rm(model_reactivity_pen_enet, model_reactivity_pen_ridge, model_reactivity_pen_lasso, model_reactivity)
+```
+
+## deg_Mg_pH10
+
+### Premier modèle
+
+```{r}
+formula_deg_Mg_pH10 = paste0("deg_Mg_pH10", formula_model_full)
+```
+
+```{r}
+model_deg_Mg_pH10 = lm(formula = formula_deg_Mg_pH10, data = data_train)
+```
+
+```{r}
+summary(model_deg_Mg_pH10)
+```
+
+Il est important de noter que le premier modèle n'est pas de plein rang, donc on ne peut pas se fier à ses prédictions. <br>
+Cependant, la pénalisation va nous aider à résoudre ce problème.
+```{r}
+y_pred_train = predict.lm(model_deg_Mg_pH10,data_train,type="response")
+error_train <- mean((y_pred_train-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
+print(error_train)
+
+y_pred_val=predict.lm(model_deg_Mg_pH10,data_val,type="response")
+error_val <- mean((y_pred_val-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
+print(error_val)
+```
+
+```{r}
+models_deg_Mg_pH10 <- c(models_deg_Mg_pH10, "model_full")
+errors_deg_Mg_pH10_train <- c(errors_deg_Mg_pH10_train, error_train)
+errors_deg_Mg_pH10_val <- c(errors_deg_Mg_pH10_val, error_val)
+rm(error_val, error_train, y_pred_train, y_pred_val)
+```
+
+### Pénalisation ridge et lasso
+
+On commence par calculer la matrice de design du model_deg_Mg_pH10 sur le train et le test.
+```{r}
+# Matrice de design du train
+data_train_pen = model.matrix(model_deg_Mg_pH10)
+#head(data_train_pen)
+```
+
+```{r}
+# Pour faire la matrice de design de la validation
+model_deg_Mg_pH10_val = lm(formula = formula_deg_Mg_pH10, data = data_val)
+data_val_pen = model.matrix(model_deg_Mg_pH10_val)
+#head(data_val_pen)
+
+# On supprime le modèle sur le test
+rm(model_deg_Mg_pH10_val)
+```
+
+On pénalise le model_deg_Mg_pH10 avec une pénalité ridge.
+On choisira  dans la suite le $\lambda$ qui minimise l'erreur de cross validation avec `s = "lambda.min"`. On peut afficher les coefficients du modèle correspondant.
+```{r}
+#model_deg_Mg_pH10_pen_ridge = cv.glmnet(data_train_pen, data_train$deg_Mg_pH10,
+#                                             type.measure = "mse",
+#                                             alpha = 0,
+#                                             trace.it = 1)
+```
+
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_deg_Mg_pH10_pen_ridge, "model_deg_Mg_pH10_pen_ridge.rds")
+```
+
+Chargement du modèle.
+```{r}
+model_deg_Mg_pH10_pen_ridge <- readRDS("model_deg_Mg_pH10_pen_ridge.rds")
+```
+
+```{r}
+coef(model_deg_Mg_pH10_pen_ridge, s = "lambda.min")
+```
+
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation ridge.
+```{r}
+y_pred_ridge_train = predict(model_deg_Mg_pH10_pen_ridge, data_train_pen,
+                                   type = "response", s = "lambda.min")
+y_pred_ridge_val = predict(model_deg_Mg_pH10_pen_ridge, data_val_pen,
+                                 type = "response", s = "lambda.min")
+error_ridge_train <- mean((y_pred_ridge_train-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
+print(error_ridge_train)
+error_ridge_val <- mean((y_pred_ridge_val-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
+print(error_ridge_val)
+```
+
+On pénalise le model_deg_Mg_pH10 avec une pénalité lasso.
+On choisira  dans la suite le $\lambda$ qui minimise l'erreur de cross validation avec `s = "lambda.min"`. On peut afficher les coefficients du modèle correspondant.
+```{r}
+#model_deg_Mg_pH10_pen_lasso = cv.glmnet(data_train_pen, data_train$deg_Mg_pH10,
+#                                             type.measure = "mse",
+#                                             alpha = 1,
+#                                             trace.it = 1)
+```
+
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_deg_Mg_pH10_pen_lasso, "model_deg_Mg_pH10_pen_lasso.rds")
+```
+
+Chargement du modèle.
+```{r}
+model_deg_Mg_pH10_pen_lasso <- readRDS("model_deg_Mg_pH10_pen_lasso.rds")
+```
+
+```{r}
+coef(model_deg_Mg_pH10_pen_lasso, s = "lambda.min")
+```
+
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation lasso.
+```{r}
+y_pred_lasso_train = predict(model_deg_Mg_pH10_pen_lasso, data_train_pen,
+                                   type="response", s="lambda.min")
+error_lasso_train <- mean((y_pred_lasso_train-data_train$deg_Mg_pH10)^2,na.rm=TRUE)
+print(error_lasso_train)
+
+y_pred_lasso_val = predict(model_deg_Mg_pH10_pen_lasso, data_val_pen,
+                                 type="response", s="lambda.min")
+error_lasso_val <- mean((y_pred_lasso_val-data_val$deg_Mg_pH10)^2,na.rm=TRUE)
+print(error_lasso_val)
+```
+
+On stocke les résultats et on supprime les variables temporaires.
+```{r}
+models_deg_Mg_pH10 <- c(models_deg_Mg_pH10, "model_ridge", "model_lasso")
+errors_deg_Mg_pH10_train <- c(errors_deg_Mg_pH10_train, error_ridge_train,
+                             error_lasso_train)
+errors_deg_Mg_pH10_val <- c(errors_deg_Mg_pH10_val, error_ridge_val, error_lasso_val)
+rm(error_ridge_val, error_lasso_val,
+   error_ridge_train, error_lasso_train,
+   y_pred_ridge_train, y_pred_ridge_val,
+   y_pred_lasso_train, y_pred_lasso_val)
+```
+
+### Pénalisation elastic-net
+
+On choisit $\alpha$ qui minimise le MSE sur la validation.
+```{r}
+#alpha_opti_enet_deg_Mg_pH10 =
+#  alpha_opti_enet(data_train = data_train_pen, data_val = data_val_pen,
+#                  y_true_train = data_train$deg_Mg_pH10,
+#                  y_true_val = data_val$deg_Mg_pH10)
+```
+
+On trouve $\alpha = 0.7$.
+```{r}
+#print(alpha_opti_enet_deg_Mg_pH10)
+```
+
+On construit le modèle avec le choix optimal pour $\alpha$.
+```{r}
+#model_deg_Mg_pH10_pen_enet = cv.glmnet(data_train_pen, data_train$deg_Mg_pH10,
+#                                             type.measure = "mse",
+#                                             alpha = alpha_opti_enet_deg_Mg_pH10,
+#                                             trace.it = 1)
+```
+
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_deg_Mg_pH10_pen_enet, "model_deg_Mg_pH10_pen_enet.rds")
+```
+
+Chargement du modèle.
+```{r}
+model_deg_Mg_pH10_pen_enet <- readRDS("model_deg_Mg_pH10_pen_enet.rds")
+```
+
+```{r}
+coef(model_deg_Mg_pH10_pen_enet, s = "lambda.min")
+```
+
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation elastic-net.
+```{r}
+y_pred_enet_train = predict(model_deg_Mg_pH10_pen_enet, data_train_pen,
+                                   type = "response", s = "lambda.min")
+error_enet_train <- mean((y_pred_enet_train - data_train$deg_Mg_pH10)^2, na.rm=TRUE)
+print(error_enet_train)
+
+y_pred_enet_val = predict(model_deg_Mg_pH10_pen_enet, data_val_pen,
+                                 type = "response", s = "lambda.min")
+error_enet_val <- mean((y_pred_enet_val - data_val$deg_Mg_pH10)^2, na.rm=TRUE)
+print(error_enet_val)
+```
+
+On stocke les résultats et on supprime les variables temporaires.
+```{r}
+models_deg_Mg_pH10 <- c(models_deg_Mg_pH10, "model_enet")
+errors_deg_Mg_pH10_train <- c(errors_deg_Mg_pH10_train, error_enet_train)
+errors_deg_Mg_pH10_val <- c(errors_deg_Mg_pH10_val, error_enet_val)
+rm(error_enet_train, error_enet_val,
+   y_pred_enet_train, y_pred_enet_val)
+```
+
+### Récapitulatif des résultats
+
+```{r}
+models_deg_Mg_pH10_errors_df <- data.frame(models_deg_Mg_pH10,
+                                          errors_deg_Mg_pH10_train,
+                                          errors_deg_Mg_pH10_val)
+```
+
+```{r}
+models_deg_Mg_pH10_errors_df
+```
+
+Le meilleur modèle (au sens de la minimisation du MSE sur la validation) est le `model_lasso` (si on exclut le premier modèle qui n'était pas de plein rang).
+```{r}
+models_deg_Mg_pH10_errors_df[which.min(errors_deg_Mg_pH10_val[-1]) + 1, ]
+```
+
+
+```{r, echo = FALSE}
+rm(model_deg_Mg_pH10_pen_enet, model_deg_Mg_pH10_pen_ridge, model_deg_Mg_pH10_pen_lasso, model_deg_Mg_pH10)
+```
+
+
+
+## deg_pH10
+
+### Premier modèle
+
+```{r}
+formula_deg_pH10 =  paste0("deg_pH10", formula_model_full)
+```
+
+```{r}
+model_deg_pH10 = lm(formula = formula_deg_pH10, data = data_train)
+```
+
+```{r}
+summary(model_deg_pH10)
+```
+
+Il est important de noter que le premier modèle n'est pas de plein rang, donc on ne peut pas se fier à ses prédictions. <br>
+Cependant, la pénalisation va nous aider à résoudre ce problème.
+```{r}
+y_pred_train = predict.lm(model_deg_pH10,data_train,type="response")
+error_train <- mean((y_pred_train-data_train$deg_pH10)^2,na.rm=TRUE)
+print(error_train)
+
+y_pred_val=predict.lm(model_deg_pH10,data_val,type="response")
+error_val <- mean((y_pred_val-data_val$deg_pH10)^2,na.rm=TRUE)
+print(error_val)
+```
+
+```{r}
+models_deg_pH10 <- c(models_deg_pH10, "model_full")
+errors_deg_pH10_train <- c(errors_deg_pH10_train, error_train)
+errors_deg_pH10_val <- c(errors_deg_pH10_val, error_val)
+rm(error_val, error_train, y_pred_train, y_pred_val)
+```
+
+### Pénalisation ridge et lasso
+
+On commence par calculer la matrice de design du model_deg_pH10 sur le train et le test.
+```{r}
+# Matrice de design du train
+data_train_pen = model.matrix(model_deg_pH10)
+#head(data_train_pen)
+```
+
+```{r}
+# Pour faire la matrice de design de la validation
+model_deg_pH10_val = lm(formula = formula_deg_pH10, data = data_val)
+data_val_pen = model.matrix(model_deg_pH10_val)
+#head(data_val_pen)
+
+# On supprime le modèle sur le test
+rm(model_deg_pH10_val)
+```
+
+On pénalise le model_deg_pH10 avec une pénalité ridge.
+On choisira  dans la suite le $\lambda$ qui minimise l'erreur de cross validation avec `s = "lambda.min"`. On peut afficher les coefficients du modèle correspondant.
+```{r}
+#model_deg_pH10_pen_ridge = cv.glmnet(data_train_pen, data_train$deg_pH10,
+#                                           type.measure = "mse",
+#                                           alpha = 0,
+#                                           trace.it = 1)
+```
+
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_deg_pH10_pen_ridge, "model_deg_pH10_pen_ridge.rds")
+```
+
+Chargement du modèle.
+```{r}
+model_deg_pH10_pen_ridge <- readRDS("model_deg_pH10_pen_ridge.rds")
+```
+
+```{r}
+coef(model_deg_pH10_pen_ridge, s = "lambda.min")
+```
+
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation ridge.
+```{r}
+y_pred_ridge_train = predict(model_deg_pH10_pen_ridge, data_train_pen,
+                                   type = "response", s = "lambda.min")
+y_pred_ridge_val = predict(model_deg_pH10_pen_ridge, data_val_pen,
+                                 type = "response", s = "lambda.min")
+error_ridge_train <- mean((y_pred_ridge_train-data_train$deg_pH10)^2,na.rm=TRUE)
+print(error_ridge_train)
+error_ridge_val <- mean((y_pred_ridge_val-data_val$deg_pH10)^2,na.rm=TRUE)
+print(error_ridge_val)
+```
+
+On pénalise le model_deg_pH10 avec une pénalité lasso.
+On choisira  dans la suite le $\lambda$ qui minimise l'erreur de cross validation avec `s = "lambda.min"`. On peut afficher les coefficients du modèle correspondant.
+```{r}
+#model_deg_pH10_pen_lasso = cv.glmnet(data_train_pen, data_train$deg_pH10,
+#                                           type.measure = "mse",
+#                                           alpha = 1,
+#                                           trace.it = 1)
+```
+
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_deg_pH10_pen_lasso, "model_deg_pH10_pen_lasso.rds")
+```
+
+Chargement du modèle.
+```{r}
+model_deg_pH10_pen_lasso <- readRDS("model_deg_pH10_pen_lasso.rds")
+```
+
+```{r}
+coef(model_deg_pH10_pen_lasso, s = "lambda.min")
+```
+
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation lasso.
+```{r}
+y_pred_lasso_train = predict(model_deg_pH10_pen_lasso, data_train_pen,
+                                   type="response", s="lambda.min")
+error_lasso_train <- mean((y_pred_lasso_train-data_train$deg_pH10)^2,na.rm=TRUE)
+print(error_lasso_train)
+
+y_pred_lasso_val = predict(model_deg_pH10_pen_lasso, data_val_pen,
+                                 type="response", s="lambda.min")
+error_lasso_val <- mean((y_pred_lasso_val-data_val$deg_pH10)^2,na.rm=TRUE)
+print(error_lasso_val)
+```
+
+On stocke les résultats et on supprime les variables temporaires.
+```{r}
+models_deg_pH10 <- c(models_deg_pH10, "model_ridge", "model_lasso")
+errors_deg_pH10_train <- c(errors_deg_pH10_train, error_ridge_train,
+                             error_lasso_train)
+errors_deg_pH10_val <- c(errors_deg_pH10_val, error_ridge_val, error_lasso_val)
+rm(error_ridge_val, error_lasso_val,
+   error_ridge_train, error_lasso_train,
+   y_pred_ridge_train, y_pred_ridge_val,
+   y_pred_lasso_train, y_pred_lasso_val)
+```
+
+### Pénalisation elastic-net
+
+On choisit $\alpha$ qui minimise le MSE sur la validation.
+```{r}
+#alpha_opti_enet_deg_pH10 =
+#  alpha_opti_enet(data_train = data_train_pen, data_val = data_val_pen,
+#                  y_true_train = data_train$deg_pH10,
+#                  y_true_val = data_val$deg_pH10)
+```
+
+On trouve $\alpha = 0.5$. 
+```{r}
+#print(alpha_opti_enet_deg_pH10)
+```
+
+On construit le modèle avec le choix optimal pour $\alpha$.
+```{r}
+#model_deg_pH10_pen_enet = cv.glmnet(data_train_pen, data_train$deg_pH10,
+#                                          type.measure = "mse",
+#                                          alpha = alpha_opti_enet_deg_pH10,
+#                                          trace.it = 1)
+```
+
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_deg_pH10_pen_enet, "model_deg_pH10_pen_enet.rds")
+```
+
+Chargement du modèle.
+```{r}
+model_deg_pH10_pen_enet <- readRDS("model_deg_pH10_pen_enet.rds")
+```
+
+```{r}
+coef(model_deg_pH10_pen_enet, s = "lambda.min")
+```
+
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation elastic-net.
+```{r}
+y_pred_enet_train = predict(model_deg_pH10_pen_enet, data_train_pen,
+                                   type = "response", s = "lambda.min")
+error_enet_train <- mean((y_pred_enet_train - data_train$deg_pH10)^2, na.rm=TRUE)
+print(error_enet_train)
+
+y_pred_enet_val = predict(model_deg_pH10_pen_enet, data_val_pen,
+                                 type = "response", s = "lambda.min")
+error_enet_val <- mean((y_pred_enet_val - data_val$deg_pH10)^2, na.rm=TRUE)
+print(error_enet_val)
+```
+
+On stocke les résultats et on supprime les variables temporaires.
+```{r}
+models_deg_pH10 <- c(models_deg_pH10, "model_enet")
+errors_deg_pH10_train <- c(errors_deg_pH10_train, error_enet_train)
+errors_deg_pH10_val <- c(errors_deg_pH10_val, error_enet_val)
+rm(error_enet_train, error_enet_val,
+   y_pred_enet_train, y_pred_enet_val)
+```
+
+
+### Récapitulatif des résultats
+
+```{r}
+models_deg_pH10_errors_df <- data.frame(models_deg_pH10,
+                                          errors_deg_pH10_train,
+                                          errors_deg_pH10_val)
+```
+
+```{r}
+models_deg_pH10_errors_df
+```
+
+Le meilleur modèle (au sens de la minimisation du MSE sur la validation) est le `model_lasso` (si on exclut le premier modèle qui n'était pas de plein rang).
+```{r}
+models_deg_pH10_errors_df[which.min(errors_deg_pH10_val[-1]) + 1, ]
+```
+
+```{r, echo = FALSE}
+rm(model_deg_pH10_pen_enet, model_deg_pH10_pen_ridge,
+   model_deg_pH10_pen_lasso, model_deg_pH10)
+```
+
+
+
+
+
+## deg_Mg_50C
+
+### Premier modèle
+
+```{r}
+formula_deg_Mg_50C =  paste0("deg_Mg_50C", formula_model_full)
+```
+
+```{r}
+model_deg_Mg_50C = lm(formula = formula_deg_Mg_50C, data = data_train)
+```
+
+```{r}
+summary(model_deg_Mg_50C)
+```
+
+Il est important de noter que le premier modèle n'est pas de plein rang, donc on ne peut pas se fier à ses prédictions. <br>
+Cependant, la pénalisation va nous aider à résoudre ce problème.
+```{r}
+y_pred_train = predict.lm(model_deg_Mg_50C,data_train,type="response")
+error_train <- mean((y_pred_train-data_train$deg_Mg_50C)^2,na.rm=TRUE)
+print(error_train)
+
+y_pred_val=predict.lm(model_deg_Mg_50C,data_val,type="response")
+error_val <- mean((y_pred_val-data_val$deg_Mg_50C)^2,na.rm=TRUE)
+print(error_val)
+```
+
+```{r}
+models_deg_Mg_50C <- c(models_deg_Mg_50C, "model_full")
+errors_deg_Mg_50C_train <- c(errors_deg_Mg_50C_train, error_train)
+errors_deg_Mg_50C_val <- c(errors_deg_Mg_50C_val, error_val)
+rm(error_val, error_train, y_pred_train, y_pred_val)
+```
+
+### Pénalisation ridge et lasso
+
+On commence par calculer la matrice de design du model_deg_Mg_50C sur le train et le test.
+```{r}
+# Matrice de design du train
+data_train_pen = model.matrix(model_deg_Mg_50C)
+#head(data_train_pen)
+```
+
+```{r}
+# Pour faire la matrice de design de la validation
+model_deg_Mg_50C_val = lm(formula = formula_deg_Mg_50C, data = data_val)
+data_val_pen = model.matrix(model_deg_Mg_50C_val)
+#head(data_val_pen)
+
+# On supprime le modèle sur le test
+rm(model_deg_Mg_50C_val)
+```
+
+On pénalise le model_deg_Mg_50C avec une pénalité ridge.
+On choisira  dans la suite le $\lambda$ qui minimise l'erreur de cross validation avec `s = "lambda.min"`. On peut afficher les coefficients du modèle correspondant.
+```{r}
+#model_deg_Mg_50C_pen_ridge = cv.glmnet(data_train_pen, data_train$deg_Mg_50C,
+#                                             type.measure = "mse",
+#                                             alpha = 0,
+#                                             trace.it = 1)
+```
+
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_deg_Mg_50C_pen_ridge, "model_deg_Mg_50C_pen_ridge.rds")
+```
+
+Chargement du modèle.
+```{r}
+model_deg_Mg_50C_pen_ridge <- readRDS("model_deg_Mg_50C_pen_ridge.rds")
+```
+
+```{r}
+coef(model_deg_Mg_50C_pen_ridge, s = "lambda.min")
+```
+
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation ridge.
+```{r}
+y_pred_ridge_train = predict(model_deg_Mg_50C_pen_ridge, data_train_pen,
+                                   type = "response", s = "lambda.min")
+y_pred_ridge_val = predict(model_deg_Mg_50C_pen_ridge, data_val_pen,
+                                 type = "response", s = "lambda.min")
+error_ridge_train <- mean((y_pred_ridge_train-data_train$deg_Mg_50C)^2,na.rm=TRUE)
+print(error_ridge_train)
+error_ridge_val <- mean((y_pred_ridge_val-data_val$deg_Mg_50C)^2,na.rm=TRUE)
+print(error_ridge_val)
+```
+
+On pénalise le model_deg_Mg_50C avec une pénalité lasso.
+On choisira  dans la suite le $\lambda$ qui minimise l'erreur de cross validation avec `s = "lambda.min"`. On peut afficher les coefficients du modèle correspondant.
+```{r}
+#model_deg_Mg_50C_pen_lasso = cv.glmnet(data_train_pen, data_train$deg_Mg_50C,
+#                                             type.measure = "mse",
+#                                             alpha = 1,
+#                                             trace.it = 1)
+```
+
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_deg_Mg_50C_pen_lasso, "model_deg_Mg_50C_pen_lasso.rds")
+```
+
+Chargement du modèle.
+```{r}
+model_deg_Mg_50C_pen_lasso <- readRDS("model_deg_Mg_50C_pen_lasso.rds")
+```
+
+```{r}
+coef(model_deg_Mg_50C_pen_lasso, s = "lambda.min")
+```
+
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation lasso.
+```{r}
+y_pred_lasso_train = predict(model_deg_Mg_50C_pen_lasso, data_train_pen,
+                                   type="response", s="lambda.min")
+error_lasso_train <- mean((y_pred_lasso_train-data_train$deg_Mg_50C)^2,na.rm=TRUE)
+print(error_lasso_train)
+
+y_pred_lasso_val = predict(model_deg_Mg_50C_pen_lasso, data_val_pen,
+                                 type="response", s="lambda.min")
+error_lasso_val <- mean((y_pred_lasso_val-data_val$deg_Mg_50C)^2,na.rm=TRUE)
+print(error_lasso_val)
+```
+
+On stocke les résultats et on supprime les variables temporaires.
+```{r}
+models_deg_Mg_50C <- c(models_deg_Mg_50C, "model_ridge", "model_lasso")
+errors_deg_Mg_50C_train <- c(errors_deg_Mg_50C_train, error_ridge_train,
+                             error_lasso_train)
+errors_deg_Mg_50C_val <- c(errors_deg_Mg_50C_val, error_ridge_val, error_lasso_val)
+rm(error_ridge_val, error_lasso_val,
+   error_ridge_train, error_lasso_train,
+   y_pred_ridge_train, y_pred_ridge_val,
+   y_pred_lasso_train, y_pred_lasso_val)
+```
+
+### Pénalisation elastic-net
+
+On choisit $\alpha$ qui minimise le MSE sur la validation.
+```{r}
+#alpha_opti_enet_deg_Mg_50C =
+#  alpha_opti_enet(data_train = data_train_pen, data_val = data_val_pen,
+#                  y_true_train = data_train$deg_Mg_50C,
+#                  y_true_val = data_val$deg_Mg_50C)
+```
+
+On trouve $\alpha = 1$. Cela correspond à la pénalisation lasso.
+```{r}
+#print(alpha_opti_enet_deg_Mg_50C)
+```
+
+On construit le modèle avec le choix optimal pour $\alpha$.
+```{r}
+#model_deg_Mg_50C_pen_enet = cv.glmnet(data_train_pen, data_train$deg_Mg_50C,
+#                                            type.measure = "mse",
+#                                            alpha = alpha_opti_enet_deg_Mg_50C,
+#                                            trace.it = 1)
+```
+
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_deg_Mg_50C_pen_enet, "model_deg_Mg_50C_pen_enet.rds")
+```
+
+Chargement du modèle.
+```{r}
+model_deg_Mg_50C_pen_enet <- readRDS("model_deg_Mg_50C_pen_enet.rds")
+```
+
+```{r}
+coef(model_deg_Mg_50C_pen_enet, s = "lambda.min")
+```
+
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation elastic-net.
+```{r}
+y_pred_enet_train = predict(model_deg_Mg_50C_pen_enet, data_train_pen,
+                                   type = "response", s = "lambda.min")
+error_enet_train <- mean((y_pred_enet_train - data_train$deg_Mg_50C)^2, na.rm=TRUE)
+print(error_enet_train)
+
+y_pred_enet_val = predict(model_deg_Mg_50C_pen_enet, data_val_pen,
+                                 type = "response", s = "lambda.min")
+error_enet_val <- mean((y_pred_enet_val - data_val$deg_Mg_50C)^2, na.rm=TRUE)
+print(error_enet_val)
+```
+
+On stocke les résultats et on supprime les variables temporaires.
+```{r}
+models_deg_Mg_50C <- c(models_deg_Mg_50C, "model_enet")
+errors_deg_Mg_50C_train <- c(errors_deg_Mg_50C_train, error_enet_train)
+errors_deg_Mg_50C_val <- c(errors_deg_Mg_50C_val, error_enet_val)
+rm(error_enet_train, error_enet_val,
+   y_pred_enet_train, y_pred_enet_val)
+```
+
+### Récapitulatif des résultats
+
+```{r}
+models_deg_Mg_50C_errors_df <- data.frame(models_deg_Mg_50C,
+                                          errors_deg_Mg_50C_train,
+                                          errors_deg_Mg_50C_val)
+```
+
+```{r}
+models_deg_Mg_50C_errors_df
+```
+
+Le meilleur modèle (au sens de la minimisation du MSE sur la validation) est le `model_lasso` (si on exclut le premier modèle qui n'était pas de plein rang).
+```{r}
+models_deg_Mg_50C_errors_df[which.min(errors_deg_Mg_50C_val[-1]) + 1, ]
+```
+
+
+```{r, echo = FALSE}
+rm(model_deg_Mg_50C_pen_enet, model_deg_Mg_50C_pen_ridge, model_deg_Mg_50C_pen_lasso, model_deg_Mg_50C)
+```
+
+
+
+
+
+## deg_50C
+
+### Premier modèle
+
+```{r}
+formula_deg_50C = paste0("deg_50C", formula_model_full)
+```
+
+```{r}
+model_deg_50C = lm(formula = formula_deg_50C, data = data_train)
+```
+
+```{r}
+summary(model_deg_50C)
+```
+
+Il est important de noter que le premier modèle n'est pas de plein rang, donc on ne peut pas se fier à ses prédictions. <br>
+Cependant, la pénalisation va nous aider à résoudre ce problème.
+```{r}
+y_pred_train = predict.lm(model_deg_50C,data_train,type="response")
+error_train <- mean((y_pred_train-data_train$deg_50C)^2,na.rm=TRUE)
+print(error_train)
+
+y_pred_val=predict.lm(model_deg_50C,data_val,type="response")
+error_val <- mean((y_pred_val-data_val$deg_50C)^2,na.rm=TRUE)
+print(error_val)
+```
+
+```{r}
+models_deg_50C <- c(models_deg_50C, "model_full")
+errors_deg_50C_train <- c(errors_deg_50C_train, error_train)
+errors_deg_50C_val <- c(errors_deg_50C_val, error_val)
+rm(error_val, error_train, y_pred_train, y_pred_val)
+```
+
+### Pénalisation ridge et lasso
+
+On commence par calculer la matrice de design du model_deg_50C sur le train et le test.
+```{r}
+# Matrice de design du train
+data_train_pen = model.matrix(model_deg_50C)
+#head(data_train_pen)
+```
+
+```{r}
+# Pour faire la matrice de design de la validation
+model_deg_50C_val = lm(formula = formula_deg_50C, data = data_val)
+data_val_pen = model.matrix(model_deg_50C_val)
+#head(data_val_pen)
+
+# On supprime le modèle sur le test
+rm(model_deg_50C_val)
+```
+
+On pénalise le model_deg_50C avec une pénalité ridge.
+On choisira  dans la suite le $\lambda$ qui minimise l'erreur de cross validation avec `s = "lambda.min"`. On peut afficher les coefficients du modèle correspondant.
+```{r}
+#model_deg_50C_pen_ridge = cv.glmnet(data_train_pen, data_train$deg_50C,
+#                                          type.measure = "mse",
+#                                          alpha = 0,
+#                                          trace.it = 1)
+```
+
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_deg_50C_pen_ridge, "model_deg_50C_pen_ridge.rds")
+```
+
+Chargement du modèle.
+```{r}
+model_deg_50C_pen_ridge <- readRDS("model_deg_50C_pen_ridge.rds")
+```
+
+```{r}
+coef(model_deg_50C_pen_ridge, s = "lambda.min")
+```
+
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation ridge.
+```{r}
+y_pred_ridge_train = predict(model_deg_50C_pen_ridge, data_train_pen,
+                                   type = "response", s = "lambda.min")
+y_pred_ridge_val = predict(model_deg_50C_pen_ridge, data_val_pen,
+                                 type = "response", s = "lambda.min")
+error_ridge_train <- mean((y_pred_ridge_train-data_train$deg_50C)^2,na.rm=TRUE)
+print(error_ridge_train)
+error_ridge_val <- mean((y_pred_ridge_val-data_val$deg_50C)^2,na.rm=TRUE)
+print(error_ridge_val)
+```
+
+On pénalise le model_deg_50C avec une pénalité lasso.
+On choisira  dans la suite le $\lambda$ qui minimise l'erreur de cross validation avec `s = "lambda.min"`. On peut afficher les coefficients du modèle correspondant.
+```{r}
+#model_deg_50C_pen_lasso = cv.glmnet(data_train_pen, data_train$deg_50C,
+#                                          type.measure = "mse",
+#                                          alpha = 1,
+#                                          trace.it = 1)
+```
+
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_deg_50C_pen_lasso, "model_deg_50C_pen_lasso.rds")
+```
+
+Chargement du modèle.
+```{r}
+model_deg_50C_pen_lasso <- readRDS("model_deg_50C_pen_lasso.rds")
+```
+
+```{r}
+coef(model_deg_50C_pen_lasso, s = "lambda.min")
+```
+
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation lasso.
+```{r}
+y_pred_lasso_train = predict(model_deg_50C_pen_lasso, data_train_pen,
+                                   type="response", s="lambda.min")
+error_lasso_train <- mean((y_pred_lasso_train-data_train$deg_50C)^2,na.rm=TRUE)
+print(error_lasso_train)
+
+y_pred_lasso_val = predict(model_deg_50C_pen_lasso, data_val_pen,
+                                 type="response", s="lambda.min")
+error_lasso_val <- mean((y_pred_lasso_val-data_val$deg_50C)^2,na.rm=TRUE)
+print(error_lasso_val)
+```
+
+On stocke les résultats et on supprime les variables temporaires.
+```{r}
+models_deg_50C <- c(models_deg_50C, "model_ridge", "model_lasso")
+errors_deg_50C_train <- c(errors_deg_50C_train, error_ridge_train,
+                             error_lasso_train)
+errors_deg_50C_val <- c(errors_deg_50C_val, error_ridge_val, error_lasso_val)
+rm(error_ridge_val, error_lasso_val,
+   error_ridge_train, error_lasso_train,
+   y_pred_ridge_train, y_pred_ridge_val,
+   y_pred_lasso_train, y_pred_lasso_val)
+```
+
+### Pénalisation elastic-net
+
+On choisit $\alpha$ qui minimise le MSE sur la validation.
+```{r}
+#alpha_opti_enet_deg_50C =
+#  alpha_opti_enet(data_train = data_train_pen, data_val = data_val_pen,
+#                  y_true_train = data_train$deg_50C,
+#                  y_true_val = data_val$deg_50C)
+```
+
+On trouve $\alpha = 0.8$.
+```{r}
+#print(alpha_opti_enet_deg_50C)
+```
+
+On construit le modèle avec le choix optimal pour $\alpha$.
+```{r}
+#model_deg_50C_pen_enet = cv.glmnet(data_train_pen, data_train$deg_50C,
+#                                         type.measure = "mse",
+#                                         alpha = alpha_opti_enet_deg_50C,
+#                                         trace.it = 1)
+```
+
+Sauvegarde du modèle.
+```{r}
+#saveRDS(model_deg_50C_pen_enet, "model_deg_50C_pen_enet.rds")
+```
+
+Chargement du modèle.
+```{r}
+model_deg_50C_pen_enet <- readRDS("model_deg_50C_pen_enet.rds")
+```
+
+```{r}
+coef(model_deg_50C_pen_enet, s = "lambda.min")
+```
+
+On calcule les prédictions et les erreurs pour le modèle avec pénalisation elastic-net.
+```{r}
+y_pred_enet_train = predict(model_deg_50C_pen_enet, data_train_pen,
+                                   type = "response", s = "lambda.min")
+error_enet_train <- mean((y_pred_enet_train - data_train$deg_50C)^2, na.rm=TRUE)
+print(error_enet_train)
+
+y_pred_enet_val = predict(model_deg_50C_pen_enet, data_val_pen,
+                                 type = "response", s = "lambda.min")
+error_enet_val <- mean((y_pred_enet_val - data_val$deg_50C)^2, na.rm=TRUE)
+print(error_enet_val)
+```
+
+On stocke les résultats et on supprime les variables temporaires.
+```{r}
+models_deg_50C <- c(models_deg_50C, "model_enet")
+errors_deg_50C_train <- c(errors_deg_50C_train, error_enet_train)
+errors_deg_50C_val <- c(errors_deg_50C_val, error_enet_val)
+rm(error_enet_train, error_enet_val,
+   y_pred_enet_train, y_pred_enet_val)
+```
+
+### Récapitulatif des résultats
+
+```{r}
+models_deg_50C_errors_df <- data.frame(models_deg_50C,
+                                       errors_deg_50C_train,
+                                       errors_deg_50C_val)
+```
+
+```{r}
+models_deg_50C_errors_df
+```
+
+Le meilleur modèle (au sens de la minimisation du MSE sur la validation) est le `model_lasso` (si on exclut le premier modèle qui n'était pas de plein rang).
+```{r}
+models_deg_50C_errors_df[which.min(errors_deg_50C_val[-1]) + 1, ]
+```
+
+```{r, echo = FALSE}
+rm(model_deg_50C_pen_enet, model_deg_50C_pen_ridge,
+   model_deg_50C_pen_lasso, model_deg_50C)
+```
+
+<a id="soumission1"></a>
+
+# Soumission Régression Linéaire Multiple
+
+```{r}
+#alpha_enet_lm_df <- data.frame(reactivity = alpha_opti_enet_reactivity,
+#                            deg_Mg_pH10 = alpha_opti_enet_deg_Mg_pH10,
+#                            deg_pH10 = alpha_opti_enet_deg_pH10,
+#                            deg_Mg_50C = alpha_opti_enet_deg_Mg_50C,
+#                            deg_50C = alpha_opti_enet_deg_50C)
+```
+
+```{r}
+#save(alpha_enet_lm_df, file = "alpha_enet_lm_df.Rda")
+load(file = "alpha_enet_lm_df.Rda")
+```
+
+```{r}
+alpha_enet_lm_df
+```
+
+```{r}
+alpha_opti_enet_reactivity <- alpha_enet_lm_df$reactivity
+  
+alpha_opti_enet_deg_Mg_pH10 <- alpha_enet_lm_df$deg_Mg_pH10
+  
+alpha_opti_enet_deg_pH10 <- alpha_enet_lm_df$deg_pH10
+  
+alpha_opti_enet_deg_Mg_50C <- alpha_enet_lm_df$deg_Mg_50C
+  
+alpha_opti_enet_deg_50C <- alpha_enet_lm_df$deg_50C
+```
+
+```{r}
+##data_test=read.csv("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/data_test.csv")
+#data_test = read.csv("data_test.csv")
+```
+
+```{r}
+#data_test = data_test[,-1] %>% mutate(sequence = as.factor(sequence)) %>% 
+#  mutate(seq_be = as.factor(seq_be)) %>% 
+#  mutate(seq_af = as.factor(seq_af)) %>% 
+#  mutate(structure = as.factor(structure)) %>% 
+#  mutate(predicted_loop_type = as.factor(predicted_loop_type))
+#
+## On ajoute de "faux labels" pour pouvoir construire la matrice de design du test
+## La matrice de design d'un modèle n'est pas influencée par la valeur des labels
+## donc cette démarche est correcte
+#data_test = data_test %>% mutate(reactivity = rep(0.5, nrow(data_test))) %>% 
+#  mutate(deg_Mg_pH10 = rep(0.5, nrow(data_test))) %>% 
+#  mutate(deg_pH10 = rep(0.5, nrow(data_test))) %>% 
+#  mutate(deg_Mg_50C = rep(0.5, nrow(data_test))) %>% 
+#  mutate(deg_50C = rep(0.5, nrow(data_test)))
+```
+
+```{r}
+#head(data_test)
+```
+
+```{r}
+#head(data_test[,119:123])
+```
+
+
+```{r}
+##y_test_pred=read.csv(file = "~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/sample_submission.csv")
+
+#y_test_pred = read.csv(file = "sample_submission.csv")
+```
+
+```{r}
+#model_reactivity = readRDS("model_reactivity_pen_enet.rds")
+#model_deg_Mg_pH10 = readRDS("model_deg_Mg_pH10_pen_enet.rds")
+#model_deg_pH10 = readRDS("model_deg_pH10_pen_enet.rds")
+#model_deg_Mg_50C = readRDS("model_deg_Mg_50C_pen_enet.rds")
+#model_deg_50C = readRDS("model_deg_50C_pen_enet.rds")
+```
+
+```{r}
+## Pour faire la matrice de design du train
+#
+#model_reactivity_train = lm(formula = formula_reactivity,
+#                                data = data)
+#data_pen_reactivity = model.matrix(model_reactivity_train)
+#
+#model_deg_Mg_pH10_train = lm(formula = formula_deg_Mg_pH10,
+#                                data = data)
+#data_pen_deg_Mg_pH10 = model.matrix(model_deg_Mg_pH10_train)
+#
+#model_deg_pH10_train = lm(formula = formula_deg_pH10,
+#                                data = data)
+#data_pen_deg_pH10 = model.matrix(model_deg_pH10_train)
+#
+#model_deg_Mg_50C_train = lm(formula = formula_deg_Mg_50C,
+#                                   data = data)
+#data_pen_deg_Mg_50C = model.matrix(model_deg_Mg_50C_train)
+#
+#model_deg_50C_train = lm(formula = formula_deg_50C,
+#                                data = data)
+#data_pen_deg_50C = model.matrix(model_deg_50C_train)
+```
+
+```{r, echo = FALSE}
+## On supprime les modèles sur le train
+#rm(model_reactivity_train, model_deg_Mg_pH10_train,
+#   model_deg_pH10_train, model_deg_Mg_50C_train,
+#   model_deg_50C_train)
+```
+
+```{r}
+#model_reactivity = update(object = model_reactivity,
+#                          x = data_pen_reactivity, y = data$reactivity)
+#model_deg_Mg_pH10 = update(object = model_deg_Mg_pH10,
+#                           x = data_pen_deg_Mg_pH10, y = data$deg_Mg_pH10)
+#model_deg_pH10 = update(object = model_deg_pH10,
+#                        x = data_pen_deg_pH10, y = data$deg_pH10)
+#model_deg_Mg_50C = update(object = model_deg_Mg_50C,
+#                          x = data_pen_deg_Mg_50C, y = data$deg_Mg_50C)
+#model_deg_50C = update(object = model_deg_50C,
+#                       x = data_pen_deg_50C, y = data$deg_50C)
+```
+
+```{r}
+#saveRDS(model_reactivity, file = "model_reactivity.rds")
+#saveRDS(model_deg_Mg_pH10, file = "model_deg_Mg_pH10.rds")
+#saveRDS(model_deg_pH10, file = "model_deg_pH10.rds")
+#saveRDS(model_deg_Mg_50C, file = "model_deg_Mg_50C.rds")
+#saveRDS(model_deg_50C, file = "model_deg_50C.rds")
+```
+
+```{r}
+#model_reactivity = readRDS("model_reactivity.rds")
+#model_deg_Mg_pH10 = readRDS("model_deg_Mg_pH10.rds")
+#model_deg_pH10 = readRDS("model_deg_pH10.rds")
+#model_deg_Mg_50C = readRDS("model_deg_Mg_50C.rds")
+#model_deg_50C = readRDS("model_deg_50C.rds")
+```
+
+```{r}
+### Pour faire la matrice de design du test
+#
+#model_reactivity_test = lm(formula = formula_reactivity,
+#                                data = data_test)
+#data_test_pen_reactivity = model.matrix(model_reactivity_test)
+#
+#model_deg_Mg_pH10_test = lm(formula = formula_deg_Mg_pH10,
+#                                data = data_test)
+#data_test_pen_deg_Mg_pH10 = model.matrix(model_deg_Mg_pH10_test)
+#
+#model_deg_pH10_test = lm(formula = formula_deg_pH10,
+#                                data = data_test)
+#data_test_pen_deg_pH10 = model.matrix(model_deg_pH10_test)
+#
+#model_deg_Mg_50C_test = lm(formula = formula_deg_Mg_50C,
+#                                   data = data_test)
+#data_test_pen_deg_Mg_50C = model.matrix(model_deg_Mg_50C_test)
+#
+#model_deg_50C_test = lm(formula = formula_deg_50C,
+#                                data = data_test)
+#data_test_pen_deg_50C = model.matrix(model_deg_50C_test)
+```
+
+```{r}
+### On supprime les modèles sur le test
+#rm(model_reactivity_test, model_deg_Mg_pH10_test,
+#   model_deg_pH10_test, model_deg_Mg_50C_test,
+#   model_deg_50C_test)
+```
+
+```{r}
+#y_test_pred = y_test_pred %>%
+#  mutate(reactivity = predict(model_reactivity, data_test_pen_reactivity,
+#                              type="response", s="lambda.min")) %>%
+#  mutate(deg_Mg_pH10 = predict(model_deg_Mg_pH10, data_test_pen_deg_Mg_pH10,
+#                               type="response", s="lambda.min")) %>%
+#  mutate(deg_pH10 = predict(model_deg_pH10, data_test_pen_deg_pH10,
+#                            type="response", s="lambda.min")) %>%
+#  mutate(deg_Mg_50C = predict(model_deg_Mg_50C, data_test_pen_deg_Mg_50C,
+#                              type="response", s="lambda.min")) %>%
+#  mutate(deg_50C = predict(model_deg_50C, data_test_pen_deg_50C,
+#                           type="response", s="lambda.min")) %>%
+#  mutate_all(unlist)
+```
+
+```{r}
+#save(y_test_pred, file = "sample_submission_LM.Rda")
+```
+
+```{r}
+#load(file = "sample_submission_LM.Rda")
+```
+
+```{r}
+#fwrite(y_test_pred, "sample_submission_LM.csv")
+```
+
+<a id="data2"></a>
+
+# Second chargement des données
+
+```{r, echo = FALSE}
+rm(list = ls())
+# source("~/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/projet_fct.R")
+source("C:/Users/Startklar/suivi-du-data-camp-DeSantiago_Boulahfa_Akrout/code/projet_fct.R")
+# source("./projet_fct.R")
+```
 
 Chargement du jeu de données.
 ```{r}
@@ -135,7 +1565,7 @@ Il suffira d'ajouter pour chaque label sa valeur dans ce dataframe pour revenir 
 translation_labels
 ```
 
-<a id="split1"></a>
+<a id="split2"></a>
 
 # Séparation train/validation
 
@@ -168,6 +1598,9 @@ sum(is.na(data_train))
 sum(is.na(data_val))
 dim(data_train)[1]+dim(data_val)[1]-dim(data)[1]
 ```
+
+
+<a id="glm"></a>
 
 # GLM: loi Gamma
 
@@ -1329,7 +2762,7 @@ rm(model_gamma_deg_50C_pen_enet, model_gamma_deg_50C_pen_ridge,
    model_gamma_deg_50C_pen_lasso, model_gamma_deg_50C)
 ```
 
-<a id="soumission1"></a>
+<a id="soumission2"></a>
 
 # Soumission GLM
 
@@ -1342,12 +2775,12 @@ rm(model_gamma_deg_50C_pen_enet, model_gamma_deg_50C_pen_ridge,
 ```
 
 ```{r}
-#alpha_enet_df
+##save(alpha_enet_df, file = "alpha_enet_df.Rda")
+load(file = "alpha_enet_df.Rda")
 ```
 
 ```{r}
-##save(alpha_enet_df, file = "alpha_enet_df.Rda")
-load(file = "alpha_enet_df.Rda")
+alpha_enet_df
 ```
 
 ```{r}
@@ -1531,9 +2964,11 @@ alpha_opti_enet_gamma_deg_50C <- alpha_enet_df$deg_50C
 #fwrite(y_test_pred, "sample_submission_GLM.csv")
 ```
 
-<a id="data2"></a>
 
-# Second chargement des données
+
+<a id="data3"></a>
+
+# Troisième chargement des données
 
 ```{r, echo = FALSE}
 rm(list = ls())
@@ -1577,7 +3012,7 @@ data=data[data$SN_filter==1,]
 rownames(data)=NULL
 ```
 
-<a id="split2"></a>
+<a id="split3"></a>
 
 # Séparation train/validation
 
@@ -1789,7 +3224,7 @@ models_RF_df <- data.frame(models_RF, errors_RF_train, errors_RF_val)
 models_RF_df
 ```
 
-<a id="soumission2"></a>
+<a id="soumission3"></a>
 
 # Soumission Random Forest
 
