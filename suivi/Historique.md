@@ -132,3 +132,6 @@ Jawad -> Création d'une nouvelle partie dans les modèles basiques: modèles de
 Il s'avère que ce sont en général les modèles avec pénalisation elastic-net qui donnent les meilleures performances.
 Ecriture d'un fichier csv pour une soumission utilisant les modèles LM avec pénalisation elastic-net et réentrainés en ajoutant les données de validation.
 
+**Dimanche 28 Mars**:
+
+Jawad -> Ajout de graphes pour représenter l'importance des features pour les modèles Random Forest réentrainés en ajoutant les données de validation.
