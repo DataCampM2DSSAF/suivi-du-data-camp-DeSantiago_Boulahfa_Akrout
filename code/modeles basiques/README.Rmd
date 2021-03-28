@@ -32,6 +32,8 @@ output: github_document
 
 > [Soumission Random Forest](#soumission3)
 
+> [Feature importance](#importance)
+
 ```{r, echo=FALSE}
 rm(list = ls())
 ```
@@ -3038,7 +3040,12 @@ rm(tamp)
 ```
 
 
+
+
+
 <a id="rf"></a>
+
+
 
 # Random Forest
 
@@ -3325,11 +3332,11 @@ rm(model_RF_reactivity, model_RF_deg_Mg_pH10, model_RF_deg_pH10,
 ```
 
 ```{r}
-#model_RF_reactivity_submission = readRDS("model_RF_reactivity_submision.rds")
-#model_RF_deg_Mg_pH10_submission = readRDS("model_RF_deg_Mg_pH10_submision.rds")
-#model_RF_deg_pH10_submission = readRDS("model_RF_deg_pH10_submision.rds")
-#model_RF_deg_Mg_50C_submission = readRDS("model_RF_deg_Mg_50C_submision.rds")
-#model_RF_deg_50C_submission = readRDS("model_RF_deg_50C_submision.rds")
+#model_RF_reactivity_submission <- readRDS("model_RF_reactivity_submission.rds")
+#model_RF_deg_Mg_pH10_submission <- readRDS("model_RF_deg_Mg_pH10_submission.rds")
+#model_RF_deg_pH10_submission <- readRDS("model_RF_deg_pH10_submission.rds")
+#model_RF_deg_Mg_50C_submission <- readRDS("model_RF_deg_Mg_50C_submission.rds")
+#model_RF_deg_50C_submission <- readRDS("model_RF_deg_50C_submission.rds")
 ```
 
 ```{r}
@@ -3363,3 +3370,43 @@ rm(model_RF_reactivity, model_RF_deg_Mg_pH10, model_RF_deg_pH10,
 #fwrite(y_test_pred_RF, "sample_submission_RF.csv")
 ```
 
+
+<a id="importance"></a>
+
+# Feature importance
+
+```{r}
+model_RF_reactivity_submission <- readRDS("model_RF_reactivity_submission.rds")
+model_RF_deg_Mg_pH10_submission <- readRDS("model_RF_deg_Mg_pH10_submission.rds")
+model_RF_deg_pH10_submission <- readRDS("model_RF_deg_pH10_submission.rds")
+model_RF_deg_Mg_50C_submission <- readRDS("model_RF_deg_Mg_50C_submission.rds")
+model_RF_deg_50C_submission <- readRDS("model_RF_deg_50C_submission.rds")
+```
+
+```{r}
+importance_reactivity <- data.frame(importance(model_RF_reactivity_submission))
+importance_deg_Mg_pH10 <- data.frame(importance(model_RF_deg_Mg_pH10_submission))
+importance_deg_pH10 <- data.frame(importance(model_RF_deg_pH10_submission))
+importance_deg_Mg_50C <- data.frame(importance(model_RF_deg_Mg_50C_submission))
+importance_deg_50C <- data.frame(importance(model_RF_deg_50C_submission))
+```
+
+```{r, fig.height=10, fig.width=12}
+varImpPlot(model_RF_reactivity_submission, main = "Feature importance (reactivity)")
+```
+
+```{r, fig.height=10, fig.width=12}
+varImpPlot(model_RF_deg_Mg_pH10_submission, main = "Feature importance (deg_Mg_pH10)")
+```
+
+```{r, fig.height=10, fig.width=12}
+varImpPlot(model_RF_deg_pH10_submission, main = "Feature importance (deg_pH10)")
+```
+
+```{r, fig.height=10, fig.width=12}
+varImpPlot(model_RF_deg_Mg_50C_submission, main = "Feature importance (deg_Mg_50C)")
+```
+
+```{r, fig.height=10, fig.width=12}
+varImpPlot(model_RF_deg_50C_submission, main = "Feature importance (deg_50C)")
+```

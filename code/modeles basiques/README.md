@@ -33,6 +33,8 @@
 
 > [Soumission Random Forest](#soumission3)
 
+> [Feature importance](#importance)
+
 <a id="data1"></a>
 
 # Premier chargement des données
@@ -11138,11 +11140,11 @@ validation.
 ```
 
 ``` r
-#model_RF_reactivity_submission = readRDS("model_RF_reactivity_submision.rds")
-#model_RF_deg_Mg_pH10_submission = readRDS("model_RF_deg_Mg_pH10_submision.rds")
-#model_RF_deg_pH10_submission = readRDS("model_RF_deg_pH10_submision.rds")
-#model_RF_deg_Mg_50C_submission = readRDS("model_RF_deg_Mg_50C_submision.rds")
-#model_RF_deg_50C_submission = readRDS("model_RF_deg_50C_submision.rds")
+#model_RF_reactivity_submission <- readRDS("model_RF_reactivity_submission.rds")
+#model_RF_deg_Mg_pH10_submission <- readRDS("model_RF_deg_Mg_pH10_submission.rds")
+#model_RF_deg_pH10_submission <- readRDS("model_RF_deg_pH10_submission.rds")
+#model_RF_deg_Mg_50C_submission <- readRDS("model_RF_deg_Mg_50C_submission.rds")
+#model_RF_deg_50C_submission <- readRDS("model_RF_deg_50C_submission.rds")
 ```
 
 ``` r
@@ -11175,3 +11177,53 @@ validation.
 ``` r
 #fwrite(y_test_pred_RF, "sample_submission_RF.csv")
 ```
+
+<a id="importance"></a>
+
+# Feature importance
+
+``` r
+model_RF_reactivity_submission <- readRDS("model_RF_reactivity_submission.rds")
+model_RF_deg_Mg_pH10_submission <- readRDS("model_RF_deg_Mg_pH10_submission.rds")
+model_RF_deg_pH10_submission <- readRDS("model_RF_deg_pH10_submission.rds")
+model_RF_deg_Mg_50C_submission <- readRDS("model_RF_deg_Mg_50C_submission.rds")
+model_RF_deg_50C_submission <- readRDS("model_RF_deg_50C_submission.rds")
+```
+
+``` r
+importance_reactivity <- data.frame(importance(model_RF_reactivity_submission))
+importance_deg_Mg_pH10 <- data.frame(importance(model_RF_deg_Mg_pH10_submission))
+importance_deg_pH10 <- data.frame(importance(model_RF_deg_pH10_submission))
+importance_deg_Mg_50C <- data.frame(importance(model_RF_deg_Mg_50C_submission))
+importance_deg_50C <- data.frame(importance(model_RF_deg_50C_submission))
+```
+
+``` r
+varImpPlot(model_RF_reactivity_submission, main = "Feature importance (reactivity)")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-442-1.png)<!-- -->
+
+``` r
+varImpPlot(model_RF_deg_Mg_pH10_submission, main = "Feature importance (deg_Mg_pH10)")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-443-1.png)<!-- -->
+
+``` r
+varImpPlot(model_RF_deg_pH10_submission, main = "Feature importance (deg_pH10)")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-444-1.png)<!-- -->
+
+``` r
+varImpPlot(model_RF_deg_Mg_50C_submission, main = "Feature importance (deg_Mg_50C)")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-445-1.png)<!-- -->
+
+``` r
+varImpPlot(model_RF_deg_50C_submission, main = "Feature importance (deg_50C)")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-446-1.png)<!-- -->
