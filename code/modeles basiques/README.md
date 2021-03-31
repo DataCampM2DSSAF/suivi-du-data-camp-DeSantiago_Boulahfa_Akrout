@@ -11182,6 +11182,9 @@ validation.
 
 # Feature importance
 
+Le but de cette partie est de construire des graphes qui représenteront
+les variables les plus importantes pour chacun des labels.
+
 ``` r
 model_RF_reactivity_submission <- readRDS("model_RF_reactivity_submission.rds")
 model_RF_deg_Mg_pH10_submission <- readRDS("model_RF_deg_Mg_pH10_submission.rds")

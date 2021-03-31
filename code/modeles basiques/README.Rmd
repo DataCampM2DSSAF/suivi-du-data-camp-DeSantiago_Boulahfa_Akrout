@@ -3375,6 +3375,7 @@ rm(model_RF_reactivity, model_RF_deg_Mg_pH10, model_RF_deg_pH10,
 
 # Feature importance
 
+Le but de cette partie est de construire des graphes qui représenteront les variables les plus importantes pour chacun des labels.
 ```{r}
 model_RF_reactivity_submission <- readRDS("model_RF_reactivity_submission.rds")
 model_RF_deg_Mg_pH10_submission <- readRDS("model_RF_deg_Mg_pH10_submission.rds")
@@ -3391,22 +3392,22 @@ importance_deg_Mg_50C <- data.frame(importance(model_RF_deg_Mg_50C_submission))
 importance_deg_50C <- data.frame(importance(model_RF_deg_50C_submission))
 ```
 
-```{r, fig.height=10, fig.width=12}
+```{r, fig.height=8, fig.width=10}
 varImpPlot(model_RF_reactivity_submission, main = "Feature importance (reactivity)")
 ```
 
-```{r, fig.height=10, fig.width=12}
+```{r, fig.height=8, fig.width=10}
 varImpPlot(model_RF_deg_Mg_pH10_submission, main = "Feature importance (deg_Mg_pH10)")
 ```
 
-```{r, fig.height=10, fig.width=12}
+```{r, fig.height=8, fig.width=10}
 varImpPlot(model_RF_deg_pH10_submission, main = "Feature importance (deg_pH10)")
 ```
 
-```{r, fig.height=10, fig.width=12}
+```{r, fig.height=8, fig.width=10}
 varImpPlot(model_RF_deg_Mg_50C_submission, main = "Feature importance (deg_Mg_50C)")
 ```
 
-```{r, fig.height=10, fig.width=12}
+```{r, fig.height=8, fig.width=10}
 varImpPlot(model_RF_deg_50C_submission, main = "Feature importance (deg_50C)")
 ```
